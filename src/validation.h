@@ -33,6 +33,10 @@
 
 #include <atomic>
 
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
+
 class CBlockIndex;
 class CBlockTreeDB;
 class CChainParams;
@@ -48,14 +52,18 @@ struct ChainTxData;
 
 struct LockPoints;
 
+const int SIGOPBYPASS = -1;
+const int CONSENSUS_SIGOPABUSE_START = 139900;
+const int CONSENSUS_SIGOPABUSE_FINISH = 165000;
+
 /** Default for -whitelistrelay. */
 static const bool DEFAULT_WHITELISTRELAY = true;
 /** Default for -whitelistforcerelay. */
 static const bool DEFAULT_WHITELISTFORCERELAY = true;
 /** Default for -minrelaytxfee, minimum relay fee for transactions */
-static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 1000;
+static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 0.5 * COIN;
 //! -maxtxfee default
-static const CAmount DEFAULT_TRANSACTION_MAXFEE = 0.1 * COIN;
+static const CAmount DEFAULT_TRANSACTION_MAXFEE = 5000 * COIN;
 //! Discourage users to set fees higher than this amount (in duffs) per kB
 static const CAmount HIGH_TX_FEE_PER_KB = 0.01 * COIN;
 //! -maxtxfee will warn if called with a higher fee than this amount (in duffs)
@@ -145,6 +153,7 @@ struct BlockHasher
     size_t operator()(const uint256& hash) const { return hash.GetCheapHash(); }
 };
 
+extern bool isIbdComplete;
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
 extern CBlockPolicyEstimator feeEstimator;
@@ -182,6 +191,7 @@ extern int64_t nMaxTipAge;
 
 extern bool fLargeWorkForkFound;
 extern bool fLargeWorkInvalidChainFound;
+extern bool fGlobalStakingToggle;
 
 extern std::atomic<bool> fDIP0001ActiveAtTip;
 
@@ -521,5 +531,18 @@ inline bool IsBlockPruned(const CBlockIndex* pblockindex)
 {
     return (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0);
 }
+
+//! Returns true if we can ignore sigops limits temporarily
+bool ignoreSigopsLimits(int nHeight);
+
+//! Returns true if we have entered PoS consensus state
+bool isPoS();
+
+//! Returns whether hardened stake checks are enabled
+bool hardenedStakeChecks();
+
+//! Functions controlling the Staking toggle
+void setStakingEnabled(bool fStaking);
+bool isStakingEnabled();
 
 #endif // BITCOIN_VALIDATION_H

@@ -41,6 +41,8 @@
 
 #include <univalue.h>
 
+extern int64_t nLastCoinStakeSearchInterval;
+
 UniValue debug(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -958,6 +960,95 @@ UniValue getspentinfo(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue getstakingstatus(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "getstakingstatus\n"
+            "Returns an object containing various staking information.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"validtime\": true|false,          (boolean) if the chain tip is within staking phases\n"
+            "  \"haveconnections\": true|false,    (boolean) if network connections are present\n"
+            "  \"walletunlocked\": true|false,     (boolean) if the wallet is unlocked\n"
+            "  \"mintablecoins\": true|false,      (boolean) if the wallet has mintable coins\n"
+            "  \"enoughcoins\": true|false,        (boolean) if available coins are greater than reserve balance\n"
+            "  \"mnsync\": true|false,             (boolean) if masternode data is synced\n"
+            "  \"staking status\": true|false,     (boolean) if the wallet is staking or not\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getstakingstatus", "") + HelpExampleRpc("getstakingstatus", ""));
+
+    if (!masternodeSync.IsSynced() || !masternodeSync.IsBlockchainSynced())
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Blockchain or masternode sync has not completed.");
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("validtime", chainActive.Tip()->nTime > 1471482000));
+    obj.push_back(Pair("haveconnections", g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) > 0));
+    if (pwallet) {
+        obj.push_back(Pair("walletunlocked", !pwallet->IsLocked()));
+        obj.push_back(Pair("mintablecoins", pwallet->MintableCoins()));
+        obj.push_back(Pair("enoughcoins", pwallet->GetBalance() > 0));
+    }
+    obj.push_back(Pair("mnsync", masternodeSync.IsSynced()));
+
+    //! override block
+    bool nStaking = false;
+    if (nLastCoinStakeSearchInterval > 0)
+        nStaking = true;
+    if (!isStakingEnabled())
+        nStaking = false;
+    obj.push_back(Pair("staking status", nStaking));
+
+    return obj;
+}
+
+UniValue setstaking(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() == 0)
+        throw std::runtime_error(
+            "staking\n"
+            "Returns an object that can be toggled to enable or disable staking.\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("setstaking", "true"));
+
+    if (!masternodeSync.IsSynced() || !masternodeSync.IsBlockchainSynced())
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Blockchain or masternode sync has not completed.");
+
+    UniValue obj(UniValue::VOBJ);
+    std::string mode = request.params[0].isNull() ? "false" : request.params[0].get_str();
+    if (mode == "true")
+        setStakingEnabled(true);
+    else
+        setStakingEnabled(false);
+
+    usleep(100000);
+    bool nStaking = isStakingEnabled();
+    obj.push_back(Pair("staking status", nStaking));
+
+    return obj;
+}
+
+UniValue isdaemonready(const JSONRPCRequest& request)
+{
+    UniValue obj(UniValue::VOBJ);
+    if (!masternodeSync.IsSynced()) {
+        obj.push_back(Pair("daemon_status", "syncing mnlist/governance"));
+    } else if (!masternodeSync.IsBlockchainSynced()) {
+        obj.push_back(Pair("daemon status", "syncing blockchain"));
+    } else if (!g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL)) {
+        obj.push_back(Pair("daemon status", "waiting for peers"));
+    } else {
+        obj.push_back(Pair("daemon status", "daemon ready"));
+    }
+
+    return obj;
+}
+
 static UniValue RPCLockedMemoryInfo()
 {
     LockedPool::Stats stats = LockedPoolManager::Instance().stats();
@@ -1161,6 +1252,9 @@ static const CRPCCommand commands[] =
     { "util",               "verifymessage",          &verifymessage,          {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, {"privkey","message"} },
     { "blockchain",         "getspentinfo",           &getspentinfo,           {"json"} },
+    { "util",               "getstakingstatus",       &getstakingstatus,       {} },
+    { "util",               "setstaking",             &setstaking,             {"mode"} },
+    { "util",               "isdaemonready",          &isdaemonready,          {} },
 
     /* Address index */
     { "addressindex",       "getaddressmempool",      &getaddressmempool,      {"addresses"}  },

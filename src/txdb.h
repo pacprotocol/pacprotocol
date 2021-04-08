@@ -145,6 +145,8 @@ public:
     bool ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &vect);
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
+    bool ReadTxPos(const uint256 &txid, CDiskTxPos& pos) const;
+    bool FindTx(const uint256& tx_hash, uint256& block_hash, CTransactionRef& tx) const;
     bool LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex);
 };
 

@@ -7,6 +7,7 @@
 
 #include <amount.h>
 #include <qt/masternodelist.h>
+#include <qt/governancelist.h>
 
 #include <QStackedWidget>
 
@@ -19,6 +20,7 @@ class SendCoinsRecipient;
 class TransactionView;
 class WalletModel;
 class AddressBookPage;
+class GovernancePage;
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -68,6 +70,7 @@ private:
     AddressBookPage *usedSendingAddressesPage;
     AddressBookPage *usedReceivingAddressesPage;
     MasternodeList *masternodeListPage;
+    GovernanceList *governanceListPage;
 
     TransactionView *transactionView;
 
@@ -83,6 +86,8 @@ public Q_SLOTS:
     void gotoMasternodePage();
     /** Switch to receive coins page */
     void gotoReceiveCoinsPage();
+    /** Switch to governance page */
+    void gotoGovernancePage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
     /** Switch to CoinJoin coins page */

@@ -12,6 +12,7 @@
 
 #include <addrman.h>
 #include <amount.h>
+#include <banned.h>
 #include <base58.h>
 #include <chain.h>
 #include <chainparams.h>
@@ -45,6 +46,7 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <validationinterface.h>
+#include <wallet/wallet.h>
 
 #include <masternode/activemasternode.h>
 #include <coinjoin/coinjoin-server.h>
@@ -659,8 +661,8 @@ void SetupServerArgs()
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/dashpay/dash>";
-    const std::string URL_WEBSITE = "<https://dash.org>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/pacprotocol/pacprotocol>";
+    const std::string URL_WEBSITE = "<https://pacprotocol.com>";
 
     return CopyrightHolders(_("Copyright (C)"), 2014, COPYRIGHT_YEAR) + "\n" +
            "\n" +
@@ -1354,19 +1356,6 @@ bool AppInitParameterInteraction()
     peer_connect_timeout = gArgs.GetArg("-peertimeout", DEFAULT_PEER_CONNECT_TIMEOUT);
     if (peer_connect_timeout <= 0) {
         return InitError("peertimeout cannot be configured with a negative value.");
-    }
-
-    if (gArgs.IsArgSet("-minrelaytxfee")) {
-        CAmount n = 0;
-        if (!ParseMoney(gArgs.GetArg("-minrelaytxfee", ""), n)) {
-            return InitError(AmountErrMsg("minrelaytxfee", gArgs.GetArg("-minrelaytxfee", "")));
-        }
-        // High fee check is done afterward in WalletParameterInteraction()
-        ::minRelayTxFee = CFeeRate(n);
-    } else if (incrementalRelayFee > ::minRelayTxFee) {
-        // Allow only setting incrementalRelayFee to control both
-        ::minRelayTxFee = incrementalRelayFee;
-        LogPrintf("Increasing minrelaytxfee to %s to match incrementalrelayfee\n",::minRelayTxFee.ToString());
     }
 
     // Sanity check argument for min fee for including tx in block
@@ -2305,6 +2294,10 @@ bool AppInitMain()
 
     llmq::StartLLMQSystem();
 
+    // ********************************************************* Step 10d: setup PACGlobal-specific tasks
+
+    initBanned();
+
     // ********************************************************* Step 11: import blocks
 
     if (!CheckDiskSpace() && !CheckDiskSpace(0, true))
@@ -2451,6 +2444,13 @@ bool AppInitMain()
     uiInterface.InitMessage(_("Done loading"));
 
     g_wallet_init_interface.Start(scheduler);
+
+#ifdef ENABLE_WALLET
+    if(!fMasternodeMode && gArgs.GetBoolArg("-staking", true)) {
+        auto m_wallet = GetWallets().front();
+        threadGroup.create_thread(boost::bind(&ThreadStakeMinter, boost::ref(chainparams), boost::ref(connman), boost::ref(m_wallet)));
+    }
+#endif
 
     return true;
 }

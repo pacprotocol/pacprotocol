@@ -4,10 +4,13 @@
 
 #include <consensus/tx_verify.h>
 
+#include <banned.h>
 #include <consensus/consensus.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>
+#include <util.h>
+#include <validation.h>
 
 // TODO remove the following dependencies
 #include <chain.h>
@@ -184,6 +187,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state)
     std::set<COutPoint> vInOutPoints;
     for (const auto& txin : tx.vin)
     {
+        if (areBannedInputs(txin.prevout.hash, txin.prevout.n))
+            return state.DoS(100, false, REJECT_INVALID, "banned-inputs-spent");
         if (!vInOutPoints.insert(txin.prevout).second)
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
     }
@@ -216,6 +221,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                          strprintf("%s: inputs missing/spent", __func__));
     }
 
+    CAmount nFees = 0;
     CAmount nValueIn = 0;
     for (unsigned int i = 0; i < tx.vin.size(); ++i) {
         const COutPoint &prevout = tx.vin[i].prevout;
@@ -236,18 +242,17 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
     }
 
-    const CAmount value_out = tx.GetValueOut();
-    if (nValueIn < value_out) {
+    if (!tx.IsCoinStake()) {
+        if (nValueIn < tx.GetValueOut())
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,
-            strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(value_out)));
-    }
-
-    // Tally transaction fees
-    const CAmount txfee_aux = nValueIn - value_out;
-    if (!MoneyRange(txfee_aux)) {
+                strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(tx.GetValueOut())));
+        CAmount nTxFee = nValueIn - tx.GetValueOut();
+        if (nTxFee < 0)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-negative");
+        nFees += nTxFee;
+        if (!MoneyRange(nFees))
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
     }
 
-    txfee = txfee_aux;
     return true;
 }
