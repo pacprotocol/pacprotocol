@@ -97,6 +97,7 @@ private:
     WalletFrame *walletFrame;
 
     UnitDisplayStatusBarControl *unitDisplayControl;
+    QLabel *labelStakingIcon;
     QLabel *labelWalletEncryptionIcon;
     QLabel *labelWalletHDStatusIcon;
     QLabel *labelConnectionsIcon;
@@ -113,6 +114,7 @@ private:
     QToolButton *receiveCoinsButton;
     QToolButton *historyButton;
     QToolButton *masternodeButton;
+    QToolButton *governanceButton;
     QAction* appToolBarLogoAction;
     QAction *quitAction;
     QAction *sendCoinsMenuAction;
@@ -126,6 +128,7 @@ private:
     QAction *optionsAction;
     QAction *toggleHideAction;
     QAction *encryptWalletAction;
+    QAction *toggleStakingAction;
     QAction *backupWalletAction;
     QAction *changePassphraseAction;
     QAction *unlockWalletAction;
@@ -247,7 +250,12 @@ public Q_SLOTS:
     */
     void updateWalletStatus();
 
+    /** Set the UI status indicators based on the currently selected wallet.
+    */
+    void setStakingStatus();
+
 private:
+
     /** Set the encryption status as shown in the UI.
        @param[in] status            current encryption status
        @see WalletModel::EncryptionStatus
@@ -276,12 +284,16 @@ private Q_SLOTS:
     void gotoHistoryPage();
     /** Switch to masternode page */
     void gotoMasternodePage();
+    /** Switch to governance page */
+    void gotoGovernancePage();
     /** Switch to receive coins page */
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
     /** Switch to CoinJoin coins page */
     void gotoCoinJoinCoinsPage(QString addr = "");
+    /** Toggle staking */
+    void toggleStaking();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

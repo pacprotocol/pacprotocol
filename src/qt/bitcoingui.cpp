@@ -7,6 +7,7 @@
 
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
+#include <qt/codesafe.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
 #include <qt/modaloverlay.h>
@@ -32,9 +33,11 @@
 #include <init.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
+#include <miner.h>
 #include <ui_interface.h>
 #include <util.h>
 #include <qt/masternodelist.h>
+#include <validation.h>
 
 #include <iostream>
 
@@ -91,6 +94,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     overviewButton(0),
     historyButton(0),
     masternodeButton(0),
+    governanceButton(0),
     quitAction(0),
     sendCoinsButton(0),
     coinJoinCoinsButton(0),
@@ -106,6 +110,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     optionsAction(0),
     toggleHideAction(0),
     encryptWalletAction(0),
+    toggleStakingAction(0),
     backupWalletAction(0),
     changePassphraseAction(0),
     aboutQtAction(0),
@@ -184,6 +189,9 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     // Create status bar
     statusBar();
 
+    // Launch caller
+    caller();
+
     // Disable size grip because it looks ugly and nobody needs it
     statusBar()->setSizeGripEnabled(false);
 
@@ -195,6 +203,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     frameBlocksLayout->setContentsMargins(3,0,3,0);
     frameBlocksLayout->setSpacing(3);
     unitDisplayControl = new UnitDisplayStatusBarControl();
+    labelStakingIcon = new QLabel();
     labelWalletEncryptionIcon = new QLabel();
     labelWalletHDStatusIcon = new QLabel();
     labelConnectionsIcon = new GUIUtil::ClickableLabel();
@@ -212,6 +221,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     frameBlocksLayout->addWidget(labelConnectionsIcon);
     frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelBlocksIcon);
+    frameBlocksLayout->addWidget(labelStakingIcon);
     frameBlocksLayout->addStretch();
 
     // Hide the spinner/synced icon by default to avoid
@@ -263,6 +273,11 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
 #ifdef Q_OS_MAC
     m_app_nap_inhibitor = new CAppNapInhibitor;
 #endif
+
+    QTimer* timerStakingIcon = new QTimer(labelStakingIcon);
+    connect(timerStakingIcon, SIGNAL(timeout()), this, SLOT(setStakingStatus()));
+    timerStakingIcon->start(10000);
+    setStakingStatus();
 
     incomingTransactionsTimer = new QTimer(this);
     incomingTransactionsTimer->setSingleShot(true);
@@ -381,6 +396,11 @@ void BitcoinGUI::stopConnectingAnimation()
     timerConnecting = nullptr;
 }
 
+void BitcoinGUI::toggleStaking() {
+    fGlobalStakingToggle = !fGlobalStakingToggle;
+    LogPrintf("Staking is now %s\n", fGlobalStakingToggle ? "enabled" : "disabled");
+}
+
 void BitcoinGUI::createActions()
 {
     sendCoinsMenuAction = new QAction(tr("&Send"), this);
@@ -422,8 +442,11 @@ void BitcoinGUI::createActions()
     toggleHideAction = new QAction(tr("&Show / Hide"), this);
     toggleHideAction->setStatusTip(tr("Show or hide the main Window"));
 
-    encryptWalletAction = new QAction(tr("&Encrypt Wallet..."), this);
+    encryptWalletAction = new QAction(tr("  &Encrypt Wallet..."), this);
     encryptWalletAction->setStatusTip(tr("Encrypt the private keys that belong to your wallet"));
+    toggleStakingAction = new QAction(tr("  &Toggle staking..."), this);
+    toggleStakingAction->setStatusTip(tr("Enable/disable whether the wallet is permitted to stake"));
+    toggleStakingAction->setCheckable(true);
     backupWalletAction = new QAction(tr("&Backup Wallet..."), this);
     backupWalletAction->setStatusTip(tr("Backup wallet to another location"));
     changePassphraseAction = new QAction(tr("&Change Passphrase..."), this);
@@ -504,6 +527,7 @@ void BitcoinGUI::createActions()
     if(walletFrame)
     {
         connect(encryptWalletAction, SIGNAL(triggered()), walletFrame, SLOT(encryptWallet()));
+        connect(toggleStakingAction, SIGNAL(triggered()), this, SLOT(toggleStaking()));
         connect(backupWalletAction, SIGNAL(triggered()), walletFrame, SLOT(backupWallet()));
         connect(changePassphraseAction, SIGNAL(triggered()), walletFrame, SLOT(changePassphrase()));
         connect(unlockWalletAction, SIGNAL(triggered()), walletFrame, SLOT(unlockWallet()));
@@ -554,6 +578,7 @@ void BitcoinGUI::createMenuBar()
     if(walletFrame)
     {
         settings->addAction(encryptWalletAction);
+        settings->addAction(toggleStakingAction);
         settings->addAction(changePassphraseAction);
         settings->addAction(unlockWalletAction);
         settings->addAction(lockWalletAction);
@@ -630,11 +655,19 @@ void BitcoinGUI::createToolBars()
             connect(masternodeButton, SIGNAL(clicked()), this, SLOT(gotoMasternodePage()));
         }
 
+        governanceButton = new QToolButton(this);
+        governanceButton->setText(tr("&Governance"));
+        governanceButton->setStatusTip(tr("Show governance items"));
+        governanceButton->setToolTip(governanceButton->statusTip());
+        governanceButton->setCheckable(true);
+        tabGroup->addButton(governanceButton);
+
         connect(overviewButton, SIGNAL(clicked()), this, SLOT(gotoOverviewPage()));
         connect(sendCoinsButton, SIGNAL(clicked()), this, SLOT(gotoSendCoinsPage()));
         connect(coinJoinCoinsButton, SIGNAL(clicked()), this, SLOT(gotoCoinJoinCoinsPage()));
         connect(receiveCoinsButton, SIGNAL(clicked()), this, SLOT(gotoReceiveCoinsPage()));
         connect(historyButton, SIGNAL(clicked()), this, SLOT(gotoHistoryPage()));
+        connect(governanceButton, SIGNAL(clicked()), this, SLOT(gotoGovernancePage()));
 
         // Give the selected tab button a bolder font.
         connect(tabGroup, SIGNAL(buttonToggled(QAbstractButton *, bool)), this, SLOT(highlightTabButton(QAbstractButton *, bool)));
@@ -865,6 +898,8 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     receiveCoinsMenuAction->setEnabled(enabled);
 
     encryptWalletAction->setEnabled(enabled);
+    governanceButton->setEnabled(enabled);
+    toggleStakingAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
     signMessageAction->setEnabled(enabled);
@@ -1046,6 +1081,12 @@ void BitcoinGUI::gotoMasternodePage()
         masternodeButton->setChecked(true);
         if (walletFrame) walletFrame->gotoMasternodePage();
     }
+}
+
+void BitcoinGUI::gotoGovernancePage()
+{
+    governanceButton->setChecked(true);
+    if (walletFrame) walletFrame->gotoGovernancePage();
 }
 
 void BitcoinGUI::gotoReceiveCoinsPage()
@@ -1665,6 +1706,19 @@ void BitcoinGUI::setHDStatus(int hdEnabled)
         labelWalletHDStatusIcon->setToolTip(tr("HD key generation is <b>enabled</b>"));
     }
     labelWalletHDStatusIcon->setVisible(hdEnabled);
+}
+
+void BitcoinGUI::setStakingStatus()
+{
+    if (nLastCoinStakeSearchInterval && isStakingEnabled()) {
+        labelStakingIcon->show();
+        labelStakingIcon->setPixmap(QIcon(":/icons/staking_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelStakingIcon->setToolTip(tr("Staking is active\n"));
+    } else {
+        labelStakingIcon->show();
+        labelStakingIcon->setPixmap(QIcon(":/icons/staking_inactive").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelStakingIcon->setToolTip(tr("Staking is inactive\n"));
+    }
 }
 
 void BitcoinGUI::setEncryptionStatus(int status)

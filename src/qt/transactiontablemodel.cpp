@@ -381,6 +381,8 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Received from");
     case TransactionRecord::RecvWithCoinJoin:
         return tr("Received via %1").arg("CoinJoin");
+    case TransactionRecord::StakeMint:
+        return tr("Minted");
     case TransactionRecord::SendToAddress:
     case TransactionRecord::SendToOther:
         return tr("Sent to");

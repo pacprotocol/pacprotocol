@@ -38,7 +38,20 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(interfaces::Wal
     auto node = interfaces::MakeNode();
     auto& coinJoinOptions = node->coinJoinOptions();
 
-    if (nNet > 0 || wtx.is_coinbase)
+    if (nNet > 0 || wtx.is_coinstake)
+    {
+        TransactionRecord sub(hash, nTime, TransactionRecord::StakeMint, "", -nDebit, wtx.tx->vout[1].nValue);
+        CTxDestination address;
+        const CTxOut& txout = wtx.tx->vout[1];
+        isminetype mine = wtx.txout_is_mine[1];
+
+        if(ExtractDestination(txout.scriptPubKey, address) && wtx.txout_is_mine[1])
+            sub.strAddress = EncodeDestination(address);
+
+        sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
+        parts.append(sub);
+    }
+    else if (nNet > 0 || wtx.is_coinbase)
     {
         //
         // Credit

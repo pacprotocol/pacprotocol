@@ -118,6 +118,7 @@ BITCOIN_CORE_H = \
   spentindex.h \
   addrman.h \
   attributes.h \
+  banned.h \
   base58.h \
   batchedlogger.h \
   bech32.h \
@@ -219,6 +220,8 @@ BITCOIN_CORE_H = \
   policy/feerate.h \
   policy/fees.h \
   policy/policy.h \
+  pos/blocksigner.h \
+  pos/kernel.h \
   pow.h \
   protocol.h \
   random.h \
@@ -298,6 +301,7 @@ libdash_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libdash_server_a_SOURCES = \
   addrdb.cpp \
   addrman.cpp \
+  banned.cpp \
   batchedlogger.cpp \
   bloom.cpp \
   blockencodings.cpp \
@@ -354,6 +358,8 @@ libdash_server_a_SOURCES = \
   noui.cpp \
   policy/fees.cpp \
   policy/policy.cpp \
+  pos/blocksigner.cpp \
+  pos/kernel.cpp \
   pow.cpp \
   rest.cpp \
   rpc/blockchain.cpp \
@@ -683,7 +689,7 @@ if GLIBC_BACK_COMPAT
 endif
 
 libdashconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libdashconsensus_la_LIBADD = $(LIBSECP256K1) $(BLS_LIBS)
+libdashconsensus_la_LIBADD = $(LIBSECP256K1)
 libdashconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
 libdashconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
@@ -703,6 +709,7 @@ CLEANFILES += compat/*.gcda compat/*.gcno
 CLEANFILES += consensus/*.gcda consensus/*.gcno
 CLEANFILES += crypto/*.gcda crypto/*.gcno
 CLEANFILES += policy/*.gcda policy/*.gcno
+CLEANFILES += pos/*.gcda pos/*.gcno
 CLEANFILES += primitives/*.gcda primitives/*.gcno
 CLEANFILES += script/*.gcda script/*.gcno
 CLEANFILES += support/*.gcda support/*.gcno

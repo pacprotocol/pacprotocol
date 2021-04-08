@@ -19,7 +19,7 @@ class CTxOut;
 /** Default for -blockmaxsize, which controls the maximum size of block the mining code will create **/
 static const unsigned int DEFAULT_BLOCK_MAX_SIZE = 2000000;
 /** Default for -blockmintxfee, which sets the minimum feerate for a transaction in blocks created by mining code **/
-static const unsigned int DEFAULT_BLOCK_MIN_TX_FEE = 1000;
+static const unsigned int DEFAULT_BLOCK_MIN_TX_FEE = 0.5 * COIN;
 /** The maximum size for transactions we're willing to relay/mine */
 static const unsigned int MAX_STANDARD_TX_SIZE = 100000;
 /** The minimum size for transactions we're willing to relay/mine (1 empty scriptSig input + 1 P2PKH output = 85 bytes) */

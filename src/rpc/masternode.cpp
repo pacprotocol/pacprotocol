@@ -21,7 +21,9 @@
 #include <iomanip>
 #include <univalue.h>
 
-static UniValue masternodelist(const JSONRPCRequest& request);
+// note - rebased iamunick's 'nextpaymentblock' rpc call from https://github.com/PACGlobalOfficial/PAC/pull/21
+
+UniValue masternodelist(const JSONRPCRequest& request);
 
 static void masternode_list_help()
 {
@@ -41,6 +43,7 @@ static void masternode_list_help()
             "  json           - Print info in JSON format (can be additionally filtered, partial match)\n"
             "  lastpaidblock  - Print the last block height a node was paid on the network\n"
             "  lastpaidtime   - Print the last time a node was paid on the network\n"
+            "  nextpaymentblock - Print the projected block height a node will likely be paid on the network\n"
             "  owneraddress   - Print the masternode owner PAC address\n"
             "  payee          - Print the masternode payout PAC address (can be additionally filtered,\n"
             "                   partial match)\n"
@@ -558,7 +561,7 @@ static UniValue masternodelist(const JSONRPCRequest& request)
     if (request.fHelp || (
                 strMode != "addr" && strMode != "full" && strMode != "info" && strMode != "json" &&
                 strMode != "owneraddress" && strMode != "votingaddress" &&
-                strMode != "lastpaidtime" && strMode != "lastpaidblock" &&
+                strMode != "lastpaidtime" && strMode != "lastpaidblock" && strMode != "nextpaymentblock" &&
                 strMode != "payee" && strMode != "pubkeyoperator" &&
                 strMode != "status"))
     {
@@ -586,6 +589,13 @@ static UniValue masternodelist(const JSONRPCRequest& request)
         const CBlockIndex* pindex = chainActive[dmn->pdmnState->nLastPaidHeight];
         return (int)pindex->nTime;
     };
+
+    auto projectedPayees = mnList.GetProjectedMNPayees(mnList.GetValidMNsCount());
+    std::map<uint256, int> nextPayments;
+    for (size_t i = 0; i < projectedPayees.size(); i++) {
+        const auto& dmn = projectedPayees[i];
+        nextPayments.emplace(dmn->proTxHash, mnList.GetHeight() + (int)i + 1);
+    }
 
     mnList.ForEachMN(false, [&](const CDeterministicMNCPtr& dmn) {
         std::string strOutpoint = dmn->collateralOutpoint.ToStringShort();
@@ -617,6 +627,7 @@ static UniValue masternodelist(const JSONRPCRequest& request)
                            payeeStr << " " << std::setw(10) <<
                            dmnToLastPaidTime(dmn) << " "  << std::setw(6) <<
                            dmn->pdmnState->nLastPaidHeight << " " <<
+                           (nextPayments.count(dmn->proTxHash) ? nextPayments[dmn->proTxHash] : -1) << " " <<
                            dmn->pdmnState->addr.ToString();
             std::string strFull = streamFull.str();
             if (strFilter !="" && strFull.find(strFilter) == std::string::npos &&

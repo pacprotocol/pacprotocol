@@ -113,6 +113,8 @@ void CMasternodeSync::ProcessMessage(CNode* pfrom, const std::string& strCommand
 
 void CMasternodeSync::ProcessTick(CConnman& connman)
 {
+    if (!isIbdComplete) return;
+
     static int nTick = 0;
     nTick++;
 
