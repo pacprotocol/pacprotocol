@@ -93,10 +93,10 @@ static int AppInitRawTx(int argc, char* argv[])
     if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help"))
     {
         // First part of help message is specific to this utility
-        std::string strUsage = strprintf("%s dash-tx utility version", PACKAGE_NAME) + " " + FormatFullVersion() + "\n\n" +
+        std::string strUsage = strprintf("%s pacprotocol-tx utility version", PACKAGE_NAME) + " " + FormatFullVersion() + "\n\n" +
             "Usage:\n"
-              "  dash-tx [options] <hex-tx> [commands]  Update hex-encoded dash transaction\n" +
-              "  dash-tx [options] -create [commands]   Create hex-encoded dash transaction\n" +
+              "  pacprotocol-tx [options] <hex-tx> [commands]  Update hex-encoded pacprotocol transaction\n" +
+              "  pacprotocol-tx [options] -create [commands]   Create hex-encoded pacprotocol transaction\n" +
               "\n";
         strUsage += gArgs.GetHelpMessage();
 
@@ -737,7 +737,7 @@ static int CommandLineRawTx(int argc, char* argv[])
             if (argc < 2)
                 throw std::runtime_error("too few parameters");
 
-            // param: hex-encoded dash transaction
+            // param: hex-encoded pacprotocol transaction
             std::string strHexTx(argv[1]);
             if (strHexTx == "-")                 // "-" implies standard input
                 strHexTx = readStdin();
