@@ -2117,7 +2117,7 @@ static void ThreadMapPort()
             }
         }
 
-        std::string strDesc = "Dash Core " + FormatFullVersion();
+        std::string strDesc = "pacprotocol " + FormatFullVersion();
 
         do {
 #ifndef UPNPDISCOVER_SUCCESS

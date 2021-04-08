@@ -57,7 +57,7 @@
 #include <boost/thread.hpp>
 
 #if defined(NDEBUG)
-# error "Dash Core cannot be compiled without assertions."
+# error "pacprotocol cannot be compiled without assertions."
 #endif
 
 #define MICRO 0.000001
@@ -1892,7 +1892,7 @@ static bool WriteUndoDataForBlock(const CBlockUndo& blockundo, CValidationState&
 static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 
 void ThreadScriptCheck() {
-    RenameThread("dash-scriptch");
+    RenameThread("pacprotocol-scriptch");
     scriptcheckqueue.Thread();
 }
 

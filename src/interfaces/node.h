@@ -32,7 +32,7 @@ namespace interfaces {
 class Handler;
 class Wallet;
 
-//! Interface for the src/evo part of a dash node (dashd process).
+//! Interface for the src/evo part of a dash node (pacprotocold process).
 class EVO
 {
 public:
@@ -40,7 +40,7 @@ public:
     virtual CDeterministicMNList getListAtChainTip() = 0;
 };
 
-//! Interface for the src/llmq part of a dash node (dashd process).
+//! Interface for the src/llmq part of a dash node (pacprotocold process).
 class LLMQ
 {
 public:
@@ -48,7 +48,7 @@ public:
     virtual size_t getInstantSentLockCount() = 0;
 };
 
-//! Interface for the src/masternode part of a dash node (dashd process).
+//! Interface for the src/masternode part of a dash node (pacprotocold process).
 namespace Masternode
 {
 class Sync
@@ -86,7 +86,7 @@ public:
 };
 }
 
-//! Top-level interface for a dash node (dashd process).
+//! Top-level interface for a dash node (pacprotocold process).
 class Node
 {
 public:

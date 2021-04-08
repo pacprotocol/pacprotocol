@@ -42,7 +42,7 @@ enum NumConnections {
 class CDeterministicMNList;
 typedef std::shared_ptr<CDeterministicMNList> CDeterministicMNListPtr;
 
-/** Model for Dash network client. */
+/** Model for PAC network client. */
 class ClientModel : public QObject
 {
     Q_OBJECT
