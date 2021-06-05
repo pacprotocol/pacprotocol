@@ -20,6 +20,7 @@
 #include <init.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
+#include <pos/prevstake.h>
 #include <pow.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -4064,7 +4065,9 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         if (!CheckProofOfStake(block, hashProofOfStake, pindex->pprev))
             return error("%s: check proof-of-stake failed for block %s\n", __func__, block.GetHash().ToString());
         if (hashProofOfStake == uint256())
-            return error("%s: hashproof returned empty!\n");
+            return error("%s: hashproof returned empty!\n", __func__);
+        if (isIbdComplete && !checkPrevStake(hashProofOfStake, chainparams))
+            return error("%s: hashproof has already been used!\n", __func__);
         uint256 hash = block.GetHash();
         if (!mapProofOfStake.count(hash)) // add to mapProofOfStake
             mapProofOfStake.insert(std::make_pair(hash, hashProofOfStake));

@@ -208,6 +208,9 @@ struct Params {
     int nStakeMaxAge{0};
     int64_t nModifierInterval{0};
 
+    /** misc parameters */
+    int nPrevStakeChecks{0};
+
     /** these parameters are only used on devnet and can be configured from the outside */
     int nMinimumDifficultyBlocks{0};
     int nHighSubsidyBlocks{0};
