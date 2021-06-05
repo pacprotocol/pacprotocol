@@ -221,6 +221,7 @@ BITCOIN_CORE_H = \
   policy/policy.h \
   pos/blocksigner.h \
   pos/kernel.h \
+  pos/prevstake.h \
   pow.h \
   protocol.h \
   random.h \
@@ -356,6 +357,7 @@ libdash_server_a_SOURCES = \
   policy/policy.cpp \
   pos/blocksigner.cpp \
   pos/kernel.cpp \
+  pos/prevstake.cpp \
   pow.cpp \
   rest.cpp \
   rpc/blockchain.cpp \
