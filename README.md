@@ -12,7 +12,7 @@ are carried out collectively by the network. pacprotocol is the name of the open
 source software which enables the use of this currency; a product of pacglobal.
 
 For more information, as well as an immediately useable, binary version of
-the pacprotocol software, see https://pacglobal.io/
+the pacprotocol software, see https://pacprotocol.com/
 
 
 How do I build the software?
