@@ -162,6 +162,7 @@ BITCOIN_CORE_H = \
   evo/simplifiedmns.h \
   evo/specialtx.h \
   dsnotificationinterface.h \
+  generation.h \
   governance/governance.h \
   governance/governance-classes.h \
   governance/governance-exceptions.h \
@@ -317,6 +318,7 @@ libdash_server_a_SOURCES = \
   evo/providertx.cpp \
   evo/simplifiedmns.cpp \
   evo/specialtx.cpp \
+  generation.cpp \
   httprpc.cpp \
   httpserver.cpp \
   init.cpp \
