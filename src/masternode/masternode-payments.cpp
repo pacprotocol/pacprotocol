@@ -2,6 +2,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <generation.h>
 #include <masternode/activemasternode.h>
 #include <governance/governance-classes.h>
 #include <masternode/masternode-payments.h>
@@ -73,6 +74,9 @@ bool IsBlockValueValid(const CBlock& block, int nBlockHeight, CAmount blockRewar
     bool isBlockRewardValueMet = (block.vtx[0]->GetValueOut() <= blockReward);
 
     strErrorRet = "";
+
+    if (isGenerationBlock(nBlockHeight))
+        return true;
 
     if (nBlockHeight < consensusParams.nBudgetPaymentsStartBlock) {
         // old budget system is not activated yet, just make sure we do not exceed the regular block reward
@@ -160,6 +164,15 @@ bool IsBlockPayeeValid(const CTransaction& txNew, int nBlockHeight, CAmount bloc
         return true;
     }
 
+    if (isGenerationBlock(nBlockHeight)) {
+        for (const auto& l : txNew.vout) {
+            if (testGenerationBlock(nBlockHeight, l)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // we are still using budgets, but we have no data about them anymore,
     // we can only check masternode payments
 
@@ -215,6 +228,14 @@ void FillBlockPayments(CMutableTransaction& txNew, int nBlockHeight, CAmount blo
 
     if (!CMasternodePayments::GetMasternodeTxOuts(nBlockHeight, blockReward, voutMasternodePaymentsRet)) {
         LogPrint(BCLog::MNPAYMENTS, "%s -- no masternode to pay (MN list probably empty)\n", __func__);
+    }
+
+    if (isGenerationBlock(nBlockHeight)) {
+        CAmount amountGenerated = getGenerationAmount(nBlockHeight);
+        CTxDestination addressGenerated = DecodeDestination(Params().SporkAddresses()[0]);
+        CScript payeeAddr = GetScriptForDestination(addressGenerated);
+        CTxOut generationTx = CTxOut(amountGenerated, payeeAddr);
+        txNew.vout.push_back(generationTx);
     }
 
     txNew.vout.insert(txNew.vout.end(), voutMasternodePaymentsRet.begin(), voutMasternodePaymentsRet.end());
