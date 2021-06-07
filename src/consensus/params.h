@@ -210,6 +210,7 @@ struct Params {
 
     /** misc parameters */
     int nPrevStakeChecks{0};
+    int nProtocolUpdate{0};
 
     /** these parameters are only used on devnet and can be configured from the outside */
     int nMinimumDifficultyBlocks{0};
