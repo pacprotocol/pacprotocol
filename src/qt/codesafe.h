@@ -5,6 +5,7 @@
 #ifndef BITCOIN_QT_CODESAFE_H
 #define BITCOIN_QT_CODESAFE_H
 
+#include <chainparams.h>
 #include <uint256.h>
 
 #if defined(HAVE_CONFIG_H)

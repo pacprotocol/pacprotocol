@@ -88,6 +88,17 @@ void MilliSleep(int64_t n)
 #endif
 }
 
+std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
+{
+    static std::locale classic(std::locale::classic());
+    // std::locale takes ownership of the pointer
+    std::locale loc(classic, new boost::posix_time::time_facet(pszFormat));
+    std::stringstream ss;
+    ss.imbue(loc);
+    ss << boost::posix_time::from_time_t(nTime);
+    return ss.str();
+}
+
 std::string FormatISO8601DateTime(int64_t nTime) {
     struct tm ts;
     time_t time_val = nTime;

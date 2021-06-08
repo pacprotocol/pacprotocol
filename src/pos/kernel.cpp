@@ -7,6 +7,7 @@
 #include <chainparams.h>
 #include <db.h>
 #include <init.h>
+#include <index/txindex.h>
 #include <policy/policy.h>
 #include <script/interpreter.h>
 #include <timedata.h>
@@ -319,7 +320,7 @@ bool CheckProofOfStake(const CBlock& block, uint256& hashProofOfStake, const CBl
     uint256 blockHash {};
     CBlockHeader header;
     CTransactionRef txPrev;
-    if (!pblocktree->FindTx(txin.prevout.hash, blockHash, txPrev))
+    if (!g_txindex->FindTx(txin.prevout.hash, blockHash, txPrev))
         return error("CheckProofOfStake() : tx index not found");
 
     // retrieve blockheader

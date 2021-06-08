@@ -21,9 +21,7 @@
 #include <iomanip>
 #include <univalue.h>
 
-// note - rebased iamunick's 'nextpaymentblock' rpc call from https://github.com/PACGlobalOfficial/PAC/pull/21
-
-UniValue masternodelist(const JSONRPCRequest& request);
+static UniValue masternodelist(const JSONRPCRequest& request);
 
 static void masternode_list_help()
 {

@@ -1,6 +1,7 @@
 #include <qt/governancelist.h>
 #include <qt/forms/ui_governancelist.h>
 
+#include <evo/deterministicmns.h>
 #include <masternode/masternode-sync.h>
 #include <messagesigner.h>
 #include <governance/governance.h>

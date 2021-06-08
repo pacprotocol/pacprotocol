@@ -71,7 +71,7 @@ public:
         code[30] = fCoinStake;
         code[31] = fCoinBase;
         ::Serialize(s, VARINT(code.to_ulong()));
-        ::Serialize(s, CTxOutCompressor(REF(out)));
+        ::Serialize(s, Using<TxOutCompression>(out));
     }
 
     template<typename Stream>
@@ -84,7 +84,7 @@ public:
         bitset.reset(30);
         bitset.reset(31);
         nHeight = bitset.to_ulong();
-        ::Unserialize(s, CTxOutCompressor(out));
+        ::Unserialize(s, Using<TxOutCompression>(out));
     }
 
     bool IsSpent() const {

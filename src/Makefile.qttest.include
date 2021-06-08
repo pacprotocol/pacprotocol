@@ -49,7 +49,7 @@ qt_test_test_pacprotocol_qt_SOURCES = \
   $(TEST_BITCOIN_CPP) \
   $(TEST_BITCOIN_H)
 if ENABLE_WALLET
-qt_test_test_dash_qt_SOURCES += \
+qt_test_test_pacprotocol_qt_SOURCES += \
   qt/test/addressbooktests.cpp \
   qt/test/paymentservertests.cpp \
   qt/test/wallettests.cpp \

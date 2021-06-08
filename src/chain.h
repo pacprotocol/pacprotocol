@@ -435,22 +435,19 @@ public:
         if (obj.nStatus & BLOCK_HAVE_DATA) READWRITE(VARINT(obj.nDataPos));
         if (obj.nStatus & BLOCK_HAVE_UNDO) READWRITE(VARINT(obj.nUndoPos));
 
-        READWRITE(nMint);
-        READWRITE(nMoneySupply);
-        READWRITE(nFlags);
-        READWRITE(nStakeModifier);
-        if (IsProofOfStake()) {
-            READWRITE(prevoutStake);
-            READWRITE(nStakeTime);
-            READWRITE(hashProofOfStake);
-        } else {
-            const_cast<CDiskBlockIndex*>(this)->prevoutStake.SetNull();
-            const_cast<CDiskBlockIndex*>(this)->nStakeTime = 0;
-            const_cast<CDiskBlockIndex*>(this)->hashProofOfStake = uint256();
+        READWRITE(obj.nMint);
+        READWRITE(obj.nMoneySupply);
+        READWRITE(obj.nFlags);
+        READWRITE(obj.nStakeModifier);
+        if (obj.IsProofOfStake()) {
+            READWRITE(obj.prevoutStake);
+            READWRITE(obj.nStakeTime);
+            READWRITE(obj.hashProofOfStake);
         }
 
         // block hash
         READWRITE(obj.hash);
+
         // block header
         READWRITE(obj.nVersion);
         READWRITE(obj.hashPrev);

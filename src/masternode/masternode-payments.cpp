@@ -2,8 +2,10 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <generation.h>
 #include <masternode/activemasternode.h>
+#include <evo/deterministicmns.h>
+#include <generation.h>
+#include <governance/governance.h>
 #include <governance/governance-classes.h>
 #include <masternode/activemasternode.h>
 #include <masternode/masternode-payments.h>
