@@ -87,6 +87,7 @@ public:
         Other,
         Generated,
         StakeMint,
+        MasternodeReward,
         SendToAddress,
         SendToOther,
         RecvWithAddress,
