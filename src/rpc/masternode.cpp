@@ -672,6 +672,7 @@ UniValue masternodelist(const JSONRPCRequest& request)
             objMN.pushKV("status", dmnToStatus(dmn));
             objMN.pushKV("lastpaidtime", dmnToLastPaidTime(dmn));
             objMN.pushKV("lastpaidblock", dmn->pdmnState->nLastPaidHeight);
+            objMN.pushKV("nextpaymentblock", nextPayments.count(dmn->proTxHash) ? nextPayments[dmn->proTxHash] : -1);
             objMN.pushKV("owneraddress", EncodeDestination(dmn->pdmnState->keyIDOwner));
             objMN.pushKV("votingaddress", EncodeDestination(dmn->pdmnState->keyIDVoting));
             objMN.pushKV("collateraladdress", collateralAddressStr);
@@ -680,6 +681,9 @@ UniValue masternodelist(const JSONRPCRequest& request)
         } else if (strMode == "lastpaidblock") {
             if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) return;
             obj.pushKV(strOutpoint, dmn->pdmnState->nLastPaidHeight);
+        } else if (strMode == "nextpaymentblock") {
+            if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) return;
+            obj.push_back(Pair(strOutpoint, nextPayments.count(dmn->proTxHash) ? nextPayments[dmn->proTxHash] : -1));
         } else if (strMode == "lastpaidtime") {
             if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) return;
             obj.pushKV(strOutpoint, dmnToLastPaidTime(dmn));
