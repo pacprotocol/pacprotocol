@@ -38,17 +38,39 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(interfaces::Wal
     auto node = interfaces::MakeNode();
     auto& coinJoinOptions = node->coinJoinOptions();
 
-    if (nNet > 0 || wtx.is_coinstake)
+    if(wtx.tx->IsCoinStake())
     {
-        TransactionRecord sub(hash, nTime, TransactionRecord::StakeMint, "", -nDebit, wtx.tx->vout[1].nValue);
+        TransactionRecord sub(hash, nTime);
         CTxDestination address;
-        const CTxOut& txout = wtx.tx->vout[1];
-        isminetype mine = wtx.txout_is_mine[1];
+        if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address))
+            return parts;
 
-        if(ExtractDestination(txout.scriptPubKey, address) && wtx.txout_is_mine[1])
+        if (!wtx.txout_is_mine[1])
+        {
+                for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
+                    CTxDestination outAddress;
+                    if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
+                        isminetype mine = wtx.txout_is_mine[i];
+                        if (mine) {
+                            sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
+                            sub.type = TransactionRecord::MasternodeReward;
+                            sub.strAddress = EncodeDestination(outAddress);
+                            sub.credit = wtx.tx->vout[i].nValue;
+                        }
+                    }
+                }
+        }
+        else
+        {
+
+            //stake reward
+            isminetype mine = wtx.txout_is_mine[1];
+            sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
             sub.strAddress = EncodeDestination(address);
+            sub.credit = nCredit - nDebit;
+            sub.type = TransactionRecord::StakeMint;
 
-        sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
+        }
         parts.append(sub);
     }
     else if (nNet > 0 || wtx.is_coinbase)
