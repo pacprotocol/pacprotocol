@@ -61,7 +61,7 @@ static const bool DEFAULT_WHITELISTRELAY = true;
 /** Default for -whitelistforcerelay. */
 static const bool DEFAULT_WHITELISTFORCERELAY = true;
 /** Default for -minrelaytxfee, minimum relay fee for transactions */
-static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 0.5 * COIN;
+static const CAmount DEFAULT_MIN_RELAY_TX_FEE = 0.5 * COIN;
 //! -maxtxfee default
 static const CAmount DEFAULT_TRANSACTION_MAXFEE = 5000 * COIN;
 //! Discourage users to set fees higher than this amount (in duffs) per kB

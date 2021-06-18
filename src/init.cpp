@@ -1358,6 +1358,19 @@ bool AppInitParameterInteraction()
         return InitError("peertimeout cannot be configured with a negative value.");
     }
 
+    if (gArgs.IsArgSet("-minrelaytxfee")) {
+        CAmount n = 0;
+        if (!ParseMoney(gArgs.GetArg("-minrelaytxfee", ""), n)) {
+            return InitError(AmountErrMsg("minrelaytxfee", gArgs.GetArg("-minrelaytxfee", "")));
+        }
+        // High fee check is done afterward in WalletParameterInteraction()
+        ::minRelayTxFee = CFeeRate(n);
+    } else if (incrementalRelayFee > ::minRelayTxFee) {
+        // Allow only setting incrementalRelayFee to control both
+        ::minRelayTxFee = incrementalRelayFee;
+        LogPrintf("Increasing minrelaytxfee to %s to match incrementalrelayfee\n",::minRelayTxFee.ToString());
+    }
+
     // Sanity check argument for min fee for including tx in block
     // TODO: Harmonize which arguments need sanity checking and where that happens
     if (gArgs.IsArgSet("-blockmintxfee"))
