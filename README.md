@@ -1,18 +1,14 @@
-pacprotocol staging tree 0.17
+PAC Protocol staging tree 0.17
 =============================
 
 
-What is pacprotocol?
+What is PAC Protocol?
 --------------------
 
-pacprotocol is an experimental digital currency that enables anonymous, instant
-payments to anyone, anywhere in the world. pacprotocol uses peer-to-peer technology
-to operate with no central authority: managing transactions and issuing money
-are carried out collectively by the network. pacprotocol is the name of the open
-source software which enables the use of this currency; a product of pacglobal.
+PAC Protocol is built on the foundation of a first-of-its-kind blockchain technology utilizing both proof-of-stake (POSv3, economically friendly) and deterministic Masternodes to offer a large globally decentralized network, proven to boast scalability with over 19,000 Masternodes worldwide and growing. This creates the digital architecture required for decentralized data storage, content management, and more using IPFS software.
 
 For more information, as well as an immediately useable, binary version of
-the pacprotocol software, see https://pacglobal.io/
+the pacprotocol software, see https://pacprotocol.com
 
 
 How do I build the software?
