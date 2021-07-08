@@ -2180,7 +2180,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         const int nNewProtocol = pindexBestHeader->nHeight >= chainparams.GetConsensus().nProtocolUpdate;
-        const int nMinPeerVersion = nNewProtocol ? PROTOCOL_VERSION+1 : PROTOCOL_VERSION;
+        const int nMinPeerVersion = nNewProtocol ? PROTOCOL_VERSION : PROTOCOL_VERSION-1;
 
         if (nVersion < nMinPeerVersion) {
             // disconnect from peers older than this proto version

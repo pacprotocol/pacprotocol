@@ -431,8 +431,8 @@ public:
         // pacprotocol height based parameters
         consensus.nLastPoWBlock = 329999;
         consensus.nHardenedStakeCheckHeight = 387939;
-        consensus.nProtocolUpdate = 697500;
-        consensus.nPrevStakeChecks = consensus.nProtocolUpdate;
+        consensus.nProtocolUpdate = 700000;
+        consensus.nPrevStakeChecks = 697750;
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000000000927c0");  // 600000
