@@ -17,13 +17,13 @@ static const int PROTOCOL_VERSION = 70221;
 static const int INIT_PROTO_VERSION = 209;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = PROTOCOL_VERSION-1;
+static const int MIN_PEER_PROTO_VERSION = PROTOCOL_VERSION;
 
 //! minimum proto version of masternode to accept in DKGs
-static const int MIN_MASTERNODE_PROTO_VERSION = PROTOCOL_VERSION-1;
+static const int MIN_MASTERNODE_PROTO_VERSION = PROTOCOL_VERSION;
 
 //! minimum proto version for governance sync and messages
-static const int MIN_GOVERNANCE_PEER_PROTO_VERSION = PROTOCOL_VERSION-1;
+static const int MIN_GOVERNANCE_PEER_PROTO_VERSION = PROTOCOL_VERSION;
 
 //! minimum proto version to broadcast governance messages from banned masternodes
 static const int GOVERNANCE_POSE_BANNED_VOTES_VERSION = 70215;

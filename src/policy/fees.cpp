@@ -12,7 +12,7 @@
 #include <txmempool.h>
 #include <util.h>
 
-static constexpr double INF_FEERATE = MAX_MONEY;
+static constexpr double INF_FEERATE = 1e99;
 
 std::string StringForFeeEstimateHorizon(FeeEstimateHorizon horizon) {
     static const std::map<FeeEstimateHorizon, std::string> horizon_strings = {
