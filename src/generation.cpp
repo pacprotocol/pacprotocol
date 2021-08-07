@@ -8,6 +8,7 @@ typedef std::map<int, CAmount> GeneratedFunds;
 
 const GeneratedFunds creationPoints = {
     { 387989, 1000000000 * COIN },
+    { 545600, 840686520  * COIN },
     { 697750, 1320000000 * COIN }
 };
 

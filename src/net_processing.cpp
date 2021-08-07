@@ -2179,10 +2179,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return false;
         }
 
-        const int nNewProtocol = pindexBestHeader->nHeight >= chainparams.GetConsensus().nProtocolUpdate;
-        const int nMinPeerVersion = nNewProtocol ? PROTOCOL_VERSION : PROTOCOL_VERSION-1;
-
-        if (nVersion < nMinPeerVersion) {
+        if (nVersion < MIN_PEER_PROTO_VERSION) {
             // disconnect from peers older than this proto version
             LogPrint(BCLog::NET, "peer=%d using obsolete version %i; disconnecting\n", pfrom->GetId(), nVersion);
             if (enable_bip61) {
@@ -3315,10 +3312,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         bool forceProcessing = false;
         const uint256 hash(pblock->GetHash());
 
-        auto it = mapBlockIndex.find(pblock->hashPrevBlock);
-        if (it != mapBlockIndex.end() && ((it->second->nStatus & BLOCK_HAVE_DATA) == 0))
+        const CBlockIndex* nextBlock = LookupBlockIndex(pblock->hashPrevBlock);
+        if (nextBlock && ((nextBlock->nStatus & BLOCK_HAVE_DATA) == 0))
         {
-            LogPrint(BCLog::NET, "Received block out of order: %s\n", pblock->GetHash().ToString());
+            LogPrint(BCLog::NET, "Received block out of order: %s\n", hash.ToString());
             if (mapBlocksInFlight.count(pblock->hashPrevBlock))
             {
                 LOCK(cs_main);
@@ -3371,7 +3368,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             else {
                 LOCK(cs_main);
-                mapBlockSource.erase(pblock->GetHash());
+                mapBlockSource.erase(hash);
             }
         }
         return true;
