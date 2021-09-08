@@ -7,6 +7,7 @@
 #define BITCOIN_WALLET_WALLETDB_H
 
 #include <amount.h>
+#include <bls/bls.h>
 #include <wallet/db.h>
 #include <hdchain.h>
 #include <key.h>
@@ -136,6 +137,9 @@ public:
     bool EraseTx(uint256 hash);
 
     bool WriteKeyMeta(const CPubKey& vchPubKey, const CKeyMetadata &keyMeta);
+
+    bool WriteBlsPrivkey(int64_t nPool, CBLSSecretKey& blsPrivKey);
+    bool ReadBlsPrivkey(int64_t nPool, CBLSSecretKey& blsPrivKey);
 
     bool WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey, const CKeyMetadata &keyMeta);
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata &keyMeta);

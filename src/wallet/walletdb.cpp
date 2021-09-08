@@ -59,6 +59,16 @@ bool WalletBatch::EraseTx(uint256 hash)
     return EraseIC(std::make_pair(std::string("tx"), hash));
 }
 
+bool WalletBatch::WriteBlsPrivkey(int64_t nPool, CBLSSecretKey& blsPrivKey)
+{
+    return WriteIC(std::make_pair(std::string("blsprivkey"), nPool), blsPrivKey);
+}
+
+bool WalletBatch::ReadBlsPrivkey(int64_t nPool, CBLSSecretKey& blsPrivKey)
+{
+    return m_batch.Read(std::make_pair(std::string("blsprivkey"), nPool), blsPrivKey);
+}
+
 bool WalletBatch::WriteKeyMeta(const CPubKey& vchPubKey, const CKeyMetadata& keyMeta)
 {
     return WriteIC(std::make_pair(std::string("keymeta"), vchPubKey), keyMeta, true);

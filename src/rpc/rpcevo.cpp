@@ -1188,6 +1188,16 @@ UniValue protx(const JSONRPCRequest& request)
     }
 }
 
+bool readBlsPrivkey(CWallet* pwallet, CBLSSecretKey& blsKey)
+{
+    return WalletBatch(pwallet->GetDBHandle()).ReadBlsPrivkey(0, blsKey);
+}
+
+bool writeBlsPrivkey(CWallet* pwallet, CBLSSecretKey& blsKey)
+{
+    return WalletBatch(pwallet->GetDBHandle()).WriteBlsPrivkey(0, blsKey);
+}
+
 void bls_generate_help()
 {
     throw std::runtime_error(
@@ -1209,13 +1219,47 @@ UniValue bls_generate(const JSONRPCRequest& request)
         bls_generate_help();
     }
 
+#ifdef ENABLE_WALLET
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+#else
+    CWallet* const pwallet = nullptr;
+#endif
+
     CBLSSecretKey sk;
     sk.MakeNewKey();
+
+    if (pwallet) {
+        writeBlsPrivkey(pwallet, sk);
+    }
 
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("secret", sk.ToString());
     ret.pushKV("public", sk.GetPublicKey().ToString());
     return ret;
+}
+
+UniValue bls_retrieve(const JSONRPCRequest& request)
+{
+#ifdef ENABLE_WALLET
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+#else
+    CWallet* const pwallet = nullptr;
+#endif
+
+    CBLSSecretKey sk;
+
+    try {
+        if (pwallet) {
+            readBlsPrivkey(pwallet, sk);
+        }
+        UniValue ret(UniValue::VOBJ);
+        ret.pushKV("secret", sk.ToString());
+        return ret;
+    } catch (...) {
+        throw std::runtime_error(strprintf("error retrieving blskey from wallet"));
+    }
 }
 
 void bls_fromsecret_help()
@@ -1279,6 +1323,8 @@ UniValue _bls(const JSONRPCRequest& request)
 
     if (command == "generate") {
         return bls_generate(request);
+    } else if (command == "retrieve") {
+        return bls_retrieve(request);
     } else if (command == "fromsecret") {
         return bls_fromsecret(request);
     } else {
