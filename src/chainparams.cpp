@@ -484,10 +484,10 @@ public:
         consensus.llmqs[Consensus::LLMQ_50_60] = llmq50_60;
         consensus.llmqs[Consensus::LLMQ_400_60] = llmq400_60;
         consensus.llmqs[Consensus::LLMQ_400_85] = llmq400_85;
-        //consensus.llmqs[Consensus::LLMQ_100_67] = llmq100_67;
+        consensus.llmqs[Consensus::LLMQ_100_67] = llmq100_67;
         consensus.llmqTypeChainLocks = Consensus::LLMQ_400_60;
         consensus.llmqTypeInstantSend = Consensus::LLMQ_50_60;
-        //consensus.llmqTypePlatform = Consensus::LLMQ_100_67;
+        consensus.llmqTypePlatform = Consensus::LLMQ_100_67;
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;

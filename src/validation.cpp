@@ -1659,6 +1659,7 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
         if (!alternate.IsSpent()) {
             undo.nHeight = alternate.nHeight;
             undo.fCoinBase = alternate.fCoinBase;
+            undo.fCoinStake = alternate.fCoinStake;
         } else {
             return DISCONNECT_FAILED; // adding output for transaction without known metadata
         }
@@ -1711,6 +1712,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         const CTransaction &tx = *(block.vtx[i]);
         uint256 hash = tx.GetHash();
         bool is_coinbase = tx.IsCoinBase();
+        bool is_coinstake = tx.IsCoinStake();
 
         if (fAddressIndex) {
 
@@ -1754,7 +1756,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 COutPoint out(hash, o);
                 Coin coin;
                 bool is_spent = view.SpendCoin(out, &coin);
-                if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
+                if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase || is_coinstake != coin.fCoinStake) {
                     fClean = false; // transaction output mismatch
                 }
             }
@@ -2437,7 +2439,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime5_2 = GetTimeMicros(); nTimeSubsidy += nTime5_2 - nTime5_1;
     LogPrint(BCLog::BENCHMARK, "      - GetBlockSubsidy: %.2fms [%.2fs (%.2fms/blk)]\n", MICRO * (nTime5_2 - nTime5_1), nTimeSubsidy * MICRO, nTimeSubsidy * MILLI / nBlocksTotal);
 
-    if (pindex->nHeight >= chainparams.GetConsensus().BIP65Height)
+    // We can only check this when DIP3 has been phased in
+    if (pindex->nHeight >= chainparams.GetConsensus().DIP0003EnforcementHeight)
     {
         if (!IsBlockValueValid(block, pindex->nHeight, blockReward, strError)) {
             return state.DoS(0, error("ConnectBlock(PAC): %s", strError), REJECT_INVALID, "bad-cb-amount");
@@ -2446,7 +2449,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         int64_t nTime5_3 = GetTimeMicros(); nTimeValueValid += nTime5_3 - nTime5_2;
         LogPrint(BCLog::BENCHMARK, "      - IsBlockValueValid: %.2fms [%.2fs (%.2fms/blk)]\n", MICRO * (nTime5_3 - nTime5_2), nTimeValueValid * MICRO, nTimeValueValid * MILLI / nBlocksTotal);
 
-        if (!IsBlockPayeeValid(*block.vtx[fProofOfStake], pindex->nHeight, blockReward)) {
+        if (!IsBlockPayeeValid(*block.vtx[1], pindex->nHeight, blockReward)) {
             return state.DoS(0, error("ConnectBlock(PAC): couldn't find masternode or superblock payments"),
                              REJECT_INVALID, "bad-cb-payee");
         }
@@ -3148,7 +3151,6 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
             SyncWithValidationInterfaceQueue();
         }
 
-
         const CBlockIndex *pindexFork;
         bool fInitialDownload;
         {
@@ -3210,7 +3212,7 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
     statsClient.timing("ActivateBestChain_ms", diff.total_milliseconds(), 1.0f);
 
     // Write changes periodically to disk, after relay.
-    if (!FlushStateToDisk(chainparams, state, FlushStateMode::ALWAYS)) {
+    if (!FlushStateToDisk(chainparams, state, FlushStateMode::PERIODIC)) {
         return false;
     }
 
@@ -3671,8 +3673,29 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     const bool isPoS = block.IsProofOfStake();
-    if (!isPoS && fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+
+    // Check proof of work matches claimed amount
+    if (!isPoS && fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams)) {
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+    }
+
+    // Check if we have the previous header
+    const CBlockIndex* hashPrevPtr = nullptr;
+    const uint256& hashPrevBlock = block.hashPrevBlock;
+    {
+        LOCK(cs_main);
+        hashPrevPtr = LookupBlockIndex(hashPrevBlock);
+    }
+
+    if (!hashPrevPtr) {
+        const uint256& blockHash = block.GetHash();
+        //! allow for genesis which has no parent
+        if (blockHash == consensusParams.hashGenesisBlock) {
+            return true;
+        }
+        return state.DoS(50, false, REJECT_INVALID, "no-prevblk", false, "header has no parent");
+    }
+
 
     return true;
 }
@@ -4065,7 +4088,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         uint256 hash = block.GetHash();
         if (!mapProofOfStake.count(hash)) // add to mapProofOfStake
             mapProofOfStake.insert(std::make_pair(hash, hashProofOfStake));
-	LogPrintf("%s: hashProofOfStake %s\n", __func__, hashProofOfStake.ToString());
+        LogPrintf("%s: hashProofOfStake %s\n", __func__, hashProofOfStake.ToString());
     }
 
     // Header is valid/has work, merkle tree is good...RELAY NOW
@@ -4087,7 +4110,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     }
 
     if (pcoinsTip != nullptr) {
-        FlushStateToDisk(chainparams, state, FlushStateMode::ALWAYS);
+        FlushStateToDisk(chainparams, state, FlushStateMode::NONE);
     }
 
     CheckBlockIndex(chainparams.GetConsensus());
