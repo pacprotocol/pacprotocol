@@ -1159,9 +1159,13 @@ NOTE:   unlike bitcoin we are using PREVIOUS block height here,
 */
 CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params& consensusParams, bool fSuperblockPartOnly)
 {
+    // testnet
+    if (Params().NetworkIDString() == CBaseChainParams::TESTNET) {
+        return 10000 * COIN;
+    }
+
     // proof of stake
-    if (nPrevHeight + 1 > Params().GetConsensus().nLastPoWBlock ||
-        Params().NetworkIDString() == CBaseChainParams::TESTNET)
+    if (nPrevHeight + 1 > Params().GetConsensus().nLastPoWBlock)
     {
         if (fSuperblockPartOnly) {
             if (nPrevHeight < 1471680)      return 10119 * COIN;
@@ -1170,12 +1174,6 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
             else if (nPrevHeight < 4414050) return 7589 * COIN;
             else if (nPrevHeight < 4835520) return 5059 * COIN;
             else                            return 2529 * COIN;
-        }
-
-        if (Params().NetworkIDString() == CBaseChainParams::TESTNET &&
-            nPrevHeight < Params().GetConsensus().nLastPoWBlock)
-        {
-	    return 1000000 * COIN;
         }
 
         CAmount mnPayment = GetMasternodePayment(nPrevHeight + 1, 0);

@@ -531,34 +531,34 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        consensus.nSubsidyHalvingInterval = 210240;
-        consensus.nMasternodePaymentsStartBlock = 4010; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
-        consensus.nMasternodePaymentsIncreaseBlock = 4030;
-        consensus.nMasternodePaymentsIncreasePeriod = 10;
-        consensus.nInstantSendConfirmationsRequired = 2;
-        consensus.nInstantSendKeepLock = 6;
-        consensus.nBudgetPaymentsStartBlock = 4100;
-        consensus.nBudgetPaymentsCycleBlocks = 50;
-        consensus.nBudgetPaymentsWindowBlocks = 10;
-        consensus.nSuperblockStartBlock = 4200; // NOTE: Should satisfy nSuperblockStartBlock > nBudgetPeymentsStartBlock
-        consensus.nSuperblockStartHash = uint256(); // do not check this on testnet
-        consensus.nSuperblockCycle = 24; // Superblocks can be issued hourly on testnet
-        consensus.nGovernanceMinQuorum = 1;
-        consensus.nGovernanceFilterElements = 500;
-        consensus.nMasternodeMinimumConfirmations = 1;
-        consensus.BIP34Height = 76;
-        consensus.BIP34Hash = uint256S("0x000008ebb1db2598e897d17275285767717c6acfeac4c73def49fbea1ddcbcb6");
-        consensus.BIP65Height = 2431; // 0000039cf01242c7f921dcb4806a5994bc003b48c1973ae0c89b67809c2bb2ab
-        consensus.BIP66Height = 2075; // 0000002acdd29a14583540cb72e1c5cc83783560e38fa7081495d474fe1671f7
-        consensus.DIP0001Height = 5500;
-        consensus.DIP0003Height = 7000;
-        consensus.DIP0003EnforcementHeight = 7300;
-        consensus.DIP0003EnforcementHash = uint256S("00000055ebc0e974ba3a3fb785c5ad4365a39637d4df168169ee80d313612f8f");
-        consensus.DIP0008Height = 78800; // 000000000e9329d964d80e7dab2e704b43b6bd2b91fea1e9315d38932e55fb55
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20
-        consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
-        consensus.nPowTargetSpacing = 2.5 * 60; // Dash: 2.5 minutes
-        consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.nSubsidyHalvingInterval = std::numeric_limits<int>::max();
+        consensus.nMasternodePaymentsStartBlock = std::numeric_limits<int>::max();
+        consensus.nMasternodePaymentsIncreaseBlock = std::numeric_limits<int>::max();
+        consensus.nMasternodePaymentsIncreasePeriod = std::numeric_limits<int>::max();
+        consensus.nInstantSendConfirmationsRequired = 6;
+        consensus.nInstantSendKeepLock = 24;
+        consensus.nBudgetPaymentsStartBlock = std::numeric_limits<int>::max();
+        consensus.nBudgetPaymentsCycleBlocks = std::numeric_limits<int>::max();
+        consensus.nBudgetPaymentsWindowBlocks = std::numeric_limits<int>::max();
+        consensus.nSuperblockStartBlock = std::numeric_limits<int>::max();
+        consensus.nSuperblockStartHash = uint256();
+        consensus.nSuperblockCycle = 16616;
+        consensus.nGovernanceMinQuorum = 10;
+        consensus.nGovernanceFilterElements = 20000;
+        consensus.nMasternodeMinimumConfirmations = 15;
+        consensus.BIP34Height = 0;
+        consensus.BIP34Hash = uint256();
+        consensus.BIP65Height = consensus.BIP34Height;
+        consensus.BIP66Height = consensus.BIP34Height;
+        consensus.DIP0001Height = consensus.BIP34Height;
+        consensus.DIP0003Height = std::numeric_limits<int>::max();
+        consensus.DIP0003EnforcementHeight = std::numeric_limits<int>::max();
+        consensus.DIP0003EnforcementHash = uint256();
+        consensus.DIP0008Height = std::numeric_limits<int>::max();
+        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.nPowTargetTimespan = 30 * 60;
+        consensus.nPowTargetSpacing = 2.5 * 60;
+        consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nPowKGWHeight = 0;
         consensus.nPowDGWHeight = 0;
@@ -619,6 +619,22 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nThresholdMin = 60; // 60% of 100
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nFalloffCoeff = 5; // this corresponds to 10 periods
 
+        // pacprotocol consensus based parameters
+        consensus.posLimit = uint256S("07ffff0000000000000000000000000000000000000000000000000000000000");
+        consensus.nPosTargetTimespan = consensus.nPowTargetTimespan;
+        consensus.nPosTargetSpacing = consensus.nPowTargetSpacing;
+        consensus.nMinimumStakeValue = 250 * COIN;
+        consensus.nMasternodeCollateral = 500000 * COIN;
+        consensus.nStakeMinAge = 10 * 60;
+        consensus.nStakeMaxAge = 60 * 60 * 24 * 30;
+        consensus.nModifierInterval = 60;
+
+        // pacprotocol height based parameters
+        consensus.nLastPoWBlock = 250;
+        consensus.nHardenedStakeCheckHeight = 0;
+        consensus.nProtocolUpdate = 0;
+        consensus.nPrevStakeChecks = 0;
+
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
 
@@ -630,66 +646,75 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xc8;
-        pchMessageStart[1] = 0xf5;
-        pchMessageStart[2] = 0x6a;
-        pchMessageStart[3] = 0x1c;
+        pchMessageStart[0] = 0xff;
+        pchMessageStart[1] = 0xfe;
+        pchMessageStart[2] = 0xfd;
+        pchMessageStart[3] = 0xfc;
         nDefaultPort = 8112;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1615881629, 13148, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1632000000, 1, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000004583cc7e04b1735de264526f384d48e64a5e96912c7588fa2fa43be9154"));
-        assert(genesis.hashMerkleRoot == uint256S("0xf3939e4de05e537431ef32bbebd9bc7c4e701f7205d72016f04686557af58dbf"));
+
+        // assert(consensus.hashGenesisBlock == uint256S("0x00000354655ff039a51273fe61d3b493bd2897fe6c16f732dbc4ae19f04b789e"));
+        // assert(genesis.hashMerkleRoot == uint256S("0xf3939e4de05e537431ef32bbebd9bc7c4e701f7205d72016f04686557af58dbf"));
+
+        // Note that of those which support the service bits prefix, most only support a subset of
+        // possible options.
+        // This is fine at runtime as we'll fall back to using them as a oneshot if they don't support the
+        // service bits we want, but we should get them updated to support all service bits wanted by any
+        // release ASAP to avoid it where possible.
+        // vSeeds.emplace_back("seed.pacglobal.io");
+
+        // pacprotocol addresses start with 'P'
+        base58Prefixes[PUBKEY_ADDRESS] = {0x37};
+        // pacprotocol script addresses start with '5'
+        base58Prefixes[SCRIPT_ADDRESS] = {0x0a};
+        // pacprotocol private keys start with '7' or 'X'
+        base58Prefixes[SECRET_KEY] = {0xcc};
+        // pacprotocol BIP32 pubkeys start with 'pacp'
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x03, 0xdd, 0x3e, 0x31};
+        // pacprotocol BIP32 prvkeys start with 'pacv'
+        base58Prefixes[EXT_SECRET_KEY] = {0x03, 0xdd, 0x3e, 0x5a};
+
+        // pacprotocol BIP44 coin type is '8192'
+        nExtCoinType = 8192;
 
         vFixedSeeds.clear();
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
-
-        vSeeds.clear();
-
-        // pacprotocol addresses start with 'y'
-        base58Prefixes[PUBKEY_ADDRESS] = {0x8c};
-        // pacprotocol script addresses start with '8' or '9'
-        base58Prefixes[SCRIPT_ADDRESS] = {0x13};
-        // pacprotocol private keys start with '9' or 'c' (Bitcoin defaults)
-        base58Prefixes[SECRET_KEY] = {0xef};
-        // pacprotocol BIP32 pubkeys start with 'tacp'
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x30, 0x68, 0x80};
-        // pacprotocol BIP32 prvkeys start with 'tacv'
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x30, 0x68, 0xaa};
-
-        // Testnet Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
 
         // long living quorum params
         consensus.llmqs[Consensus::LLMQ_50_60] = llmq50_60;
         consensus.llmqs[Consensus::LLMQ_400_60] = llmq400_60;
         consensus.llmqs[Consensus::LLMQ_400_85] = llmq400_85;
         consensus.llmqs[Consensus::LLMQ_100_67] = llmq100_67;
-        consensus.llmqTypeChainLocks = Consensus::LLMQ_50_60;
+        consensus.llmqTypeChainLocks = Consensus::LLMQ_400_60;
         consensus.llmqTypeInstantSend = Consensus::LLMQ_50_60;
         consensus.llmqTypePlatform = Consensus::LLMQ_100_67;
 
         fDefaultConsistencyChecks = false;
-        fRequireStandard = false;
+        fRequireStandard = true;
         fRequireRoutableExternalIP = true;
         fMineBlocksOnDemand = false;
         fAllowMultipleAddressesFromGroup = false;
-        fAllowMultiplePorts = true;
+        fAllowMultiplePorts = false;
         nLLMQConnectionRetryTimeout = 60;
 
         nPoolMinParticipants = 3;
         nPoolMaxParticipants = 5;
-        nFulfilledRequestExpireTime = 5*60; // fulfilled requests expire in 5 minutes
+        nFulfilledRequestExpireTime = 60*60; // fulfilled requests expire in 1 hour
 
         vSporkAddresses = {"PGtvidAAsW6a9tMBKmdh2tZ1B3SxFDpdXP"};
         nMinSporkKeys = 1;
         fBIP9CheckMasternodesUpgraded = true;
 
-        checkpointData = {{}};
-        chainTxData = ChainTxData{};
-    }
-};
+        checkpointData = {{
+            {  0,  genesis.GetHash() },
+        }};
+
+        chainTxData = ChainTxData{
+            genesis.nTime, 0, 0
+        };
+    }};
 
 /**
  * Devnet

@@ -577,6 +577,8 @@ void static BitcoinMiner(const CChainParams& chainparams, CConnman& connman, std
                 bool fvNodesEmpty = connman.GetNodeCount(CConnman::CONNECTIONS_ALL) == 0;
                 if (!fvNodesEmpty && !IsInitialBlockDownload() && masternodeSync.IsSynced())
                     break;
+                if (Params().NetworkIDString() == CBaseChainParams::TESTNET)
+                    break;
                 MilliSleep(5000);
             } while (true);
 
