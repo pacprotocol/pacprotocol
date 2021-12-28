@@ -54,9 +54,18 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
     scriptPubKey = scriptPubKeyIn;
 }
 
+bool CTxOut::IsTokenOutput() const
+{
+    if (scriptPubKey[0] == OP_TOKEN)
+        return true;
+    return false;
+}
+
 std::string CTxOut::ToString() const
 {
-    return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
+    if (IsTokenOutput())
+        return strprintf("CTxOut(type=token, nValue=%d, scriptPubKey=%s)", nValue, HexStr(scriptPubKey));
+    return strprintf("CTxOut(type=standard, nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nType(TRANSACTION_NORMAL), nLockTime(0) {}
@@ -127,4 +136,13 @@ std::string CTransaction::ToString() const
     for (const auto& tx_out : vout)
         str += "    " + tx_out.ToString() + "\n";
     return str;
+}
+
+bool CTransaction::HasTokenOutput() const
+{
+    for (unsigned int i = 0; i < vout.size(); i++) {
+        if (vout[i].IsTokenOutput())
+            return true;
+    }
+    return false;
 }

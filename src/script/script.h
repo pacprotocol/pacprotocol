@@ -175,7 +175,8 @@ enum opcodetype
     OP_NOP2 = OP_CHECKLOCKTIMEVERIFY,
     OP_CHECKSEQUENCEVERIFY = 0xb2,
     OP_NOP3 = OP_CHECKSEQUENCEVERIFY,
-    OP_NOP4 = 0xb3,
+    OP_TOKEN = 0xb3,
+    OP_NOP4 = OP_TOKEN,
     OP_NOP5 = 0xb4,
     OP_NOP6 = 0xb5,
     OP_NOP7 = 0xb6,
@@ -316,6 +317,24 @@ public:
             return std::numeric_limits<int>::max();
         else if (m_value < std::numeric_limits<int>::min())
             return std::numeric_limits<int>::min();
+        return m_value;
+    }
+
+    uint16_t getuint16() const
+    {
+        if (m_value > std::numeric_limits<uint16_t>::max())
+            return std::numeric_limits<uint16_t>::max();
+        else if (m_value < std::numeric_limits<uint16_t>::min())
+            return std::numeric_limits<uint16_t>::min();
+        return m_value;
+    }
+
+    uint64_t getuint64() const
+    {
+        if (m_value > std::numeric_limits<uint64_t>::max())
+            return std::numeric_limits<uint64_t>::max();
+        else if (m_value < std::numeric_limits<uint64_t>::min())
+            return std::numeric_limits<uint64_t>::min();
         return m_value;
     }
 
@@ -541,6 +560,8 @@ public:
     bool IsPayToPublicKeyHash() const;
 
     bool IsPayToScriptHash() const;
+
+    bool IsPayToToken() const;
 
     /** Used for obsolete pay-to-pubkey addresses indexing. */
     bool IsPayToPublicKey() const;
