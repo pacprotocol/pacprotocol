@@ -95,6 +95,9 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
         }
     }
 
+    //! token transfer doesnt incur fee restrictions
+    bool isTokenTx = tx.HasTokenOutput();
+
     unsigned int nDataOut = 0;
     txnouttype whichType;
     for (const CTxOut& txout : tx.vout) {
@@ -108,7 +111,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
         else if ((whichType == TX_MULTISIG) && (!fIsBareMultisigStd)) {
             reason = "bare-multisig";
             return false;
-        } else if (IsDust(txout, ::dustRelayFee)) {
+        } else if (!isTokenTx && IsDust(txout, ::dustRelayFee)) {
             reason = "dust";
             return false;
         }

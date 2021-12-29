@@ -256,6 +256,10 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
 
         txfee = txfee_aux;
+
+        // such a dirty greasy hack
+        if (tx.HasTokenOutput())
+            txfee += 1000;
     }
 
     return true;

@@ -31,6 +31,7 @@
 #include <timedata.h>
 #include <tinyformat.h>
 #include <txdb.h>
+#include <token/verify.h>
 #include <txmempool.h>
 #include <ui_interface.h>
 #include <undo.h>
@@ -657,6 +658,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.DoS(100, false, REJECT_INVALID, "qc-not-allowed");
     }
 
+    std::string tokenError;
+    if (!CheckToken(ptx, tokenError, chainparams.GetConsensus())) {
+        return error("%s: CheckToken: %s", __func__, tokenError);
+    }
+
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "coinbase");
@@ -795,8 +801,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool min fee not met", false, strprintf("%d < %d", nModifiedFees, mempoolRejectFee));
         }
 
+        //! token transfer doesnt incur fee restrictions
+        bool isTokenTx = ptx->HasTokenOutput();
+
         // No transactions are allowed below minRelayTxFee except from disconnected blocks
-        if (!bypass_limits && nModifiedFees < ::minRelayTxFee.GetFee(nSize)) {
+        if (!isTokenTx && !bypass_limits && nModifiedFees < ::minRelayTxFee.GetFee(nSize)) {
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetFee(nSize)));
         }
 
@@ -1849,6 +1858,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
 void static FlushBlockFile(bool fFinalize = false)
 {
+    //! jump in here and save issuancedb
+    SaveDB();
+
     LOCK(cs_LastBlockFile);
 
     CDiskBlockPos posOld(nLastBlockFile, 0);
@@ -2307,6 +2319,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
             }
 
+        }
+
+        // Perform token consensus checks
+        if (tx.HasTokenOutput()) {
+            std::string tokenError;
+            if (!CheckToken(MakeTransactionRef(tx), tokenError, chainparams.GetConsensus())) {
+                return error("%s: CheckToken: %s", __func__, tokenError);
+            }
         }
 
         // GetTransactionSigOpCount counts 2 types of sigops:

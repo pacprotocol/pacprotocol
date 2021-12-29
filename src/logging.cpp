@@ -141,6 +141,10 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::SPORK, "spork"},
     {BCLog::NETCONN, "netconn"},
     //End Dash
+
+    //Start PAC
+    {BCLog::TOKEN, "token"},
+    //End PAC
 };
 
 bool GetLogCategory(uint64_t *f, const std::string *str)

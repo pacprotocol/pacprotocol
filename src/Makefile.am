@@ -379,6 +379,15 @@ libdash_server_a_SOURCES = \
   statsd_client.cpp \
   timedata.cpp \
   torcontrol.cpp \
+  token/db.cpp \
+  token/db.h \
+  token/rpctoken.cpp \
+  token/token.cpp \
+  token/token.h \
+  token/util.cpp \
+  token/util.h \
+  token/verify.cpp \
+  token/verify.h \
   txdb.cpp \
   txmempool.cpp \
   ui_interface.cpp \
@@ -408,6 +417,7 @@ libdash_wallet_a_SOURCES = \
   coinjoin/coinjoin-util.cpp \
   interfaces/wallet.cpp \
   keepass.cpp \
+  token/wallet.cpp \
   wallet/crypter.cpp \
   wallet/db.cpp \
   wallet/fees.cpp \

@@ -77,6 +77,10 @@ namespace BCLog {
         NETCONN     = ((uint64_t)1 << 43),
         //End Dash
 
+        //Start PAC
+        TOKEN       = ((uint64_t)1 << 44),
+        //End PAC
+
         NET_NETCONN = NET | NETCONN, // use this to have something logged in NET and NETCONN as well
 
         ALL         = ~(uint64_t)0,
