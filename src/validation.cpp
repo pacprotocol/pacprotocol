@@ -658,8 +658,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.DoS(100, false, REJECT_INVALID, "qc-not-allowed");
     }
 
+    if (ptx->HasTokenOutput()) {
+        if (!are_tokens_active()) {
+            return error("%s: CheckToken: token layer is not currently active", __func__);
+        }
+    }
+
     std::string tokenError;
-    if (!CheckToken(ptx, tokenError, chainparams.GetConsensus())) {
+    if (!CheckToken(ptx, true, tokenError, chainparams.GetConsensus())) {
         return error("%s: CheckToken: %s", __func__, tokenError);
     }
 
@@ -809,7 +815,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetFee(nSize)));
         }
 
-        if (nAbsurdFee && nFees > nAbsurdFee)
+        if (!isTokenTx && nAbsurdFee && nFees > nAbsurdFee)
             return state.Invalid(false,
                 REJECT_HIGHFEE, "absurdly-high-fee",
                 strprintf("%d > %d", nFees, nAbsurdFee));
@@ -2323,8 +2329,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
         // Perform token consensus checks
         if (tx.HasTokenOutput()) {
+            if (!are_tokens_active(pindex->nHeight)) {
+                return error("%s: CheckToken: token layer is not currently active", __func__);
+            }
             std::string tokenError;
-            if (!CheckToken(MakeTransactionRef(tx), tokenError, chainparams.GetConsensus())) {
+            if (!CheckToken(MakeTransactionRef(tx), true, tokenError, chainparams.GetConsensus())) {
                 return error("%s: CheckToken: %s", __func__, tokenError);
             }
         }

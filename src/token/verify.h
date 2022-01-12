@@ -13,8 +13,10 @@
 #include <token/util.h>
 #include <validation.h>
 
-bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError);
+bool are_tokens_active(int height = 0);
+bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& strError);
 bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& strError);
-bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensus::Params& params);
+bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError, const Consensus::Params& params);
+void RescanBlocksForTokenData(int lastHeight, const Consensus::Params& params);
 
 #endif // TOKEN_VERIFY_H

@@ -254,6 +254,21 @@ bool CScript::IsPayToToken() const
     return false;
 }
 
+bool CScript::IsChecksumData() const
+{
+    if (this->size() > 25) {
+        return (*this)[0] == OP_TOKEN &&
+               (*this)[1] == OP_0 &&
+               (*this)[size() - 1] == OP_CHECKSIG &&
+               (*this)[size() - 2] == OP_EQUALVERIFY &&
+               (*this)[size() - 24] == OP_HASH160 &&
+               (*this)[size() - 25] == OP_DUP &&
+               (*this)[size() - 26] == OP_DROP;
+    }
+    return false;
+}
+
+
 bool CScript::IsPushOnly(const_iterator pc) const
 {
     while (pc < end())

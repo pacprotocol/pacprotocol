@@ -62,6 +62,7 @@ enum txnouttype
     TX_SCRIPTHASH,
     TX_MULTISIG,
     TX_TOKEN,
+    TX_CHECKSUM,
     TX_NULL_DATA, //!< unspendable OP_RETURN script that carries data
 };
 

@@ -4,7 +4,18 @@
 
 #include <token/verify.h>
 
-bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError)
+bool are_tokens_active(int height)
+{
+    const Consensus::Params& params = Params().GetConsensus();
+    //! check against provided height
+    if (height != 0) {
+        return height >= params.nTokenHeight;
+    }
+    //! otherwise use active chainheight
+    return chainActive.Height() >= params.nTokenHeight;
+}
+
+bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& strError)
 {
     uint256 hash = tx->GetHash();
     for (unsigned int i = 0; i < tx->vout.size(); i++) {
@@ -16,7 +27,6 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError)
             }
             token.setOriginTx(hash);
             if (token.getType() == CToken::ISSUANCE) {
-                bool alreadySeen = false;
                 for (CToken& issued : known_issuances) {
                     if (issued.getOriginTx() != token.getOriginTx()) {
                         if (issued.getName() == token.getName()) {
@@ -26,12 +36,11 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError)
                             strError = "issuance-id-exists";
                             return false;
                         }
-                    } else {
-                        //! here because we've been called again from connectblock
-                        alreadySeen = true;
                     }
                 }
-                if (!alreadySeen) {
+                std::string name = token.getName();
+                uint64_t identifier = token.getId();
+                if (!onlyCheck && (!is_name_in_issuances(name) && !is_identifier_in_issuances(identifier))) {
                     known_issuances.push_back(token);
                     SaveDB();
                 }
@@ -70,9 +79,8 @@ bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& str
     return true;
 }
 
-bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensus::Params& params)
+bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError, const Consensus::Params& params)
 {
-    int tokenIssuance = 0;
     uint256 hash = tx->GetHash();
 
     //! ensure only one issuance per tx
@@ -82,11 +90,11 @@ bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensu
             CToken token;
             CScript tokenData = tx->vout[i].scriptPubKey;
             if (token.isIssuance()) {
-                ++tokenIssuance;
+                ++issuance_total;
             }
         }
     }
-    if (tokenIssuance > 1) {
+    if (issuance_total > 1) {
         strError = "multiple-token-issuances";
         return false;
     }
@@ -107,7 +115,7 @@ bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensu
 
             //! issuance token cant check previn
             if (token.getType() == CToken::ISSUANCE) {
-                if (!CheckTokenIssuance(tx, strError)) {
+                if (!CheckTokenIssuance(tx, onlyCheck, strError)) {
                     strError = "token-already-issued";
                     return false;
                 }
@@ -160,4 +168,34 @@ bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensu
     }
 
     return true;
+}
+
+void RescanBlocksForTokenData(int lastHeight, const Consensus::Params& params)
+{
+    for (int height = params.nTokenHeight; height < lastHeight; height++) {
+
+        // fetch index for current height
+        const CBlockIndex* pindex = chainActive[height];
+
+        // read block from disk
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindex, params)) {
+            continue;
+        }
+
+        for (unsigned int i = 0; i < block.vtx.size(); i++) {
+
+            // search for token transactions
+            const CTransactionRef& tx = block.vtx[i];
+            if (!tx->HasTokenOutput()) {
+                continue;
+            }
+
+            //! parse each token transaction
+            std::string strError;
+            if (!CheckToken(tx, false, strError, params)) {
+                continue;
+            }
+        }
+    }
 }

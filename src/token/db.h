@@ -15,6 +15,9 @@
 class CTokenDB;
 extern CTokenDB *tokendb;
 
+//! allow for token ids to be nonsequential
+const int TOKEN_MAX_SKIP = 16;
+
 class CTokenDB : public CDBWrapper {
 public:
     explicit CTokenDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
@@ -31,6 +34,7 @@ public:
     bool WriteToken(CToken& token);
     bool EraseToken(uint64_t& tokenId);
     bool ExistsToken(uint64_t& tokenId);
+    void ResetIssuanceState();
 };
 
 void LoadDB();

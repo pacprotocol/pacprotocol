@@ -562,6 +562,7 @@ public:
     bool IsPayToScriptHash() const;
 
     bool IsPayToToken() const;
+    bool IsChecksumData() const;
 
     /** Used for obsolete pay-to-pubkey addresses indexing. */
     bool IsPayToPublicKey() const;

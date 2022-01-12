@@ -16,7 +16,11 @@
 
 extern std::vector<CToken> known_issuances;
 
+const int ISSUANCE_ID_BEGIN = 16;
+
 void get_next_issuance_id(uint64_t& id);
+bool is_name_in_issuances(std::string& name);
+bool is_identifier_in_issuances(uint64_t& identifier);
 bool compare_token_name(std::string& prev_token_name, std::string& token_name);
 bool check_token_name(std::string& tokenName, std::string& errorReason);
 void strip_control_chars(std::string& instr);

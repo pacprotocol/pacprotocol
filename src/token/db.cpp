@@ -15,14 +15,19 @@ CTokenDB::CTokenDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(Get
 const std::vector<CToken> CTokenDB::LoadKnownIssuances()
 {
     std::vector<CToken> info;
-    uint64_t tokenId = 0;
+    uint64_t skipTokenCount = 0;
+    uint64_t tokenId = ISSUANCE_ID_BEGIN;
+
     while (true) {
+        tokenId++;
         CToken token;
         if (!tokendb->ReadToken(tokenId, token)) {
-            break;
+            skipTokenCount++;
+            if (skipTokenCount > TOKEN_MAX_SKIP)
+                break;
+        } else {
+            info.push_back(token);
         }
-        info.push_back(token);
-        tokenId++;
     }
 
     return info;
@@ -38,6 +43,12 @@ uint64_t CTokenDB::SaveKnownIssuances()
     }
 
     return counter;
+}
+
+void CTokenDB::ResetIssuanceState()
+{
+    known_issuances.clear();
+    tokendb->Flush();
 }
 
 bool CTokenDB::ReadToken(uint64_t& tokenId, CToken& token)

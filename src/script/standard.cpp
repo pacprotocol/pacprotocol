@@ -28,6 +28,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_SCRIPTHASH: return "scripthash";
     case TX_MULTISIG: return "multisig";
     case TX_TOKEN: return "token";
+    case TX_CHECKSUM: return "checksum";
     case TX_NULL_DATA: return "nulldata";
     }
     return nullptr;
@@ -68,6 +69,14 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
         typeRet = TX_TOKEN;
         std::vector<unsigned char> hashBytes(scriptPubKey.end()-22, scriptPubKey.end()-2);
         vSolutionsRet.push_back(hashBytes);
+        return true;
+    }
+
+    // Shortcut for checksum bearing script, which permanently records a 20 byte checksum for
+    // proof/verification purposes.
+    if (scriptPubKey.IsChecksumData())
+    {
+        typeRet = TX_CHECKSUM;
         return true;
     }
 
@@ -196,6 +205,10 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
     {
         addressRet = CKeyID(uint160(vSolutions[0]));
         return true;
+    }
+    else if (whichType == TX_CHECKSUM)
+    {
+        return false;
     }
 
     // Multisig txns have more than one address...

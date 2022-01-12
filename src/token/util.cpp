@@ -8,7 +8,7 @@ std::vector<CToken> known_issuances;
 
 void get_next_issuance_id(uint64_t& id)
 {
-    id = 16;
+    id = ISSUANCE_ID_BEGIN;
     for (CToken& token : known_issuances) {
          uint64_t next_id = token.getId();
          if (next_id >= id) {
@@ -16,6 +16,26 @@ void get_next_issuance_id(uint64_t& id)
          }
     }
     id++;
+}
+
+bool is_name_in_issuances(std::string& name)
+{
+	for (CToken& token : known_issuances) {
+		if (token.getName() == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool is_identifier_in_issuances(uint64_t& identifier)
+{
+	for (CToken& token : known_issuances) {
+		if (token.getId() == identifier) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool compare_token_name(std::string& prev_token_name, std::string& token_name)

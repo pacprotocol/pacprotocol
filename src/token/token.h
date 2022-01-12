@@ -83,6 +83,8 @@ public:
     }
 };
 
+void build_checksum_script(CScript& checksum_script, uint160& checksum_input);
+bool decode_checksum_script(CScript& checksum_script, uint160& checksum_output);
 void build_token_script(CScript& token_script, const uint8_t version, const uint16_t type, uint64_t& identifier, std::string& name, CScript& scriptPubKey);
 bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type, uint64_t& identifier, std::string& name, CPubKey& ownerPubKey, bool debug = true);
 bool build_token_from_script(CScript& token_script, CToken& token);

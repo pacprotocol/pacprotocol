@@ -56,7 +56,14 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
 
 bool CTxOut::IsTokenOutput() const
 {
-    if (scriptPubKey[0] == OP_TOKEN)
+    if (scriptPubKey[0] == OP_TOKEN && scriptPubKey[1] != OP_0)
+        return true;
+    return false;
+}
+
+bool CTxOut::IsTokenChecksum() const
+{
+    if (scriptPubKey[0] == OP_TOKEN && scriptPubKey[1] == OP_0)
         return true;
     return false;
 }
@@ -65,6 +72,8 @@ std::string CTxOut::ToString() const
 {
     if (IsTokenOutput())
         return strprintf("CTxOut(type=token, nValue=%d, scriptPubKey=%s)", nValue, HexStr(scriptPubKey));
+    else if (IsTokenChecksum())
+        return strprintf("CTxOut(type=checksum, scriptPubKey=%s)", HexStr(scriptPubKey));
     return strprintf("CTxOut(type=standard, nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
 }
 

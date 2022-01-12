@@ -4,7 +4,9 @@
 
 #include <consensus/validation.h>
 #include <rpc/server.h>
+#include <token/db.h>
 #include <token/util.h>
+#include <token/verify.h>
 #include <wallet/wallet.h>
 #include <wallet/rpcwallet.h>
 #include <validation.h>
@@ -63,15 +65,16 @@ UniValue tokenmint(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 3) {
+    if (request.fHelp || request.params.size() < 3 || request.params.size() > 4) {
         throw std::runtime_error(
-            "tokenmint \"address\" \"name\" amount\n"
+            "tokenmint \"address\" \"name\" amount \"checksum\"\n"
             "\nMint an amount of token, to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
             "1. \"address\"            (string, required) The PAC address to send to.\n"
             "2. \"name\"               (string, required) The token name.\n"
             "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
+            "4. \"checksum\"           (string, optional) The IPFS checksum to associate with this token.\n"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -79,6 +82,15 @@ UniValue tokenmint(const JSONRPCRequest& request)
             + HelpExampleRpc("tokenmint", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000")
         );
     }
+
+    // Prevent tokenmint while still in blocksync
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Cannot perform token action while still in Initial Block Download");
+    }
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
 
     // Address
     std::string strOwner = request.params[0].get_str();
@@ -100,6 +112,13 @@ UniValue tokenmint(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid token amount");
     }
 
+    // Checksum
+    bool usingChecksum = true;
+    std::string strChecksum = request.params[3].get_str();
+    if (strChecksum.size() != 40 || !IsHex(strChecksum) || strChecksum.empty()) {
+        usingChecksum = false;
+    }
+
     // Build script
     uint64_t identifier;
     CScript issuance_script;    
@@ -107,14 +126,27 @@ UniValue tokenmint(const JSONRPCRequest& request)
     CScript token_destination = GetScriptForDestination(dest);
     build_token_script(issuance_script, CToken::CURRENT_VERSION, CToken::ISSUANCE, identifier, strToken, token_destination);
 
+    // Build checksum script (if required)
+    CScript checksum_script;
+    if (usingChecksum) {
+        std::vector<unsigned char> vecChecksum = ParseHex(strChecksum.c_str());
+        uint160 checksum;
+        memcpy(&checksum, vecChecksum.data(), 20);
+        build_checksum_script(checksum_script, checksum);
+    }
+
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
     CAmount nFeeRequired;
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = {issuance_script, nAmount, false};
+    CRecipient recipient = {issuance_script, usingChecksum ? nAmount + 1000 : nAmount , false};
     vecSend.push_back(recipient);
+    if (usingChecksum) {
+        CRecipient checksum_recipient = {checksum_script, 1000, false};
+        vecSend.push_back(checksum_recipient);
+    }
     CTransactionRef tx;
     mapValue_t mapValue;
     CCoinControl coin_control;
@@ -126,8 +158,13 @@ UniValue tokenmint(const JSONRPCRequest& request)
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
+    CWalletTx wtx(pwallet, tx);
+    if (!wtx.RelayWalletTransaction(g_connman.get())) {
+        LogPrintf("RelayWalletTransaction(): Error during transaction broadcast!");
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
 
-    return NullUniValue;
+    return wtx.GetHash().ToString();
 }
 
 UniValue tokenlist(const JSONRPCRequest& request)
@@ -135,12 +172,20 @@ UniValue tokenlist(const JSONRPCRequest& request)
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "tokenlist \"name\"\n"
             "\nList wallet information about received tokens.\n"
             "\nArguments:\n"
             "1. \"name\"            (string, optional) Only show tokens matching name.\n");
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
 
     // Name
     bool use_filter = false;
@@ -156,47 +201,63 @@ UniValue tokenlist(const JSONRPCRequest& request)
     LOCK(pwallet->cs_wallet);
 
     // Iterate wallet txes
-    UniValue result(UniValue::VARR);
-    for (auto it : pwallet->mapWallet) {
-        int n = 0;
-        const CWalletTx& wtx = it.second;
-        if (wtx.IsCoinBase())
-            continue;
-        for (const auto& out : wtx.tx->vout) {
-            CScript pk = out.scriptPubKey;
-            CAmount nValue = out.nValue;
-
-            if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
+    UniValue result(UniValue::VOBJ);
+    {
+        LOCK(pwallet->cs_wallet);
+        for (auto it : pwallet->mapWallet) {
+            int n = 0;
+            const CWalletTx& wtx = it.second;
+            if (wtx.IsCoinBase())
                 continue;
-            }
+            for (const auto& out : wtx.tx->vout) {
+                CScript pk = out.scriptPubKey;
+                CAmount nValue = out.nValue;
 
-            if (pk.IsPayToToken()) {
-                CToken token;
-                if (!build_token_from_script(pk, token)) {
+                //! only show entries with sufficient confirms
+                if (wtx.GetDepthInMainChain() == 0) {
                     continue;
                 }
-                UniValue entry(UniValue::VOBJ);
-                CTxDestination address;
-                ExtractDestination(pk, address);
-                std::string name = token.getName();
-                entry.pushKV("address", EncodeDestination(address));
-                entry.pushKV("token", name);
-                entry.pushKV("supply", nValue);
 
-                UniValue outpoint(UniValue::VOBJ);
-                outpoint.pushKV("prevhash", wtx.tx->GetHash().ToString());
-                outpoint.pushKV("n", n);
-                entry.pushKV("outpoint", outpoint);
-
-                if (!use_filter) {
-                    result.push_back(entry);
-                } else if (use_filter && compare_token_name(filter_name, name)) {
-                    result.push_back(entry);
+                //! wallet may show existing spent entries
+                if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
+                    continue;
                 }
+
+                if (pk.IsPayToToken()) {
+                    CToken token;
+                    if (!build_token_from_script(pk, token)) {
+                        continue;
+                    }
+                    CTxDestination address;
+                    ExtractDestination(pk, address);
+
+                    //! make sure we only display items 'to' us
+                    if (!IsMine(*pwallet, address)) {
+                        continue;
+                    }
+
+                    //! create and fill entry
+                    std::string name = token.getName();
+
+                    UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("address", EncodeDestination(address));
+                    entry.pushKV("amount", nValue);
+
+                    UniValue outpoint(UniValue::VOBJ);
+                    outpoint.pushKV(wtx.tx->GetHash().ToString(), n);
+                    entry.pushKV("outpoint", outpoint);
+
+                    if (!use_filter) {
+                        result.pushKV(token.getName(), entry);
+                    } else if (use_filter && compare_token_name(filter_name, name)) {
+                        result.pushKV(token.getName(), entry);
+                    }
+                }
+                ++n;
             }
-            ++n;
         }
     }
+
     return result;
 }
 
@@ -225,6 +286,15 @@ UniValue tokensend(const JSONRPCRequest& request)
             + HelpExampleRpc("tokensend", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000")
         );
     }
+
+    // Prevent tokensend while still in blocksync
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Cannot perform token action while still in Initial Block Download");
+    }
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
 
     // Address
     std::string strDest = request.params[0].get_str();
@@ -274,40 +344,86 @@ UniValue tokensend(const JSONRPCRequest& request)
     CTxOut destChangeOutput(valueOut - nAmount, destChangePubKey);
 
     // Create transaction
-    CMutableTransaction newTx;
-    newTx.nLockTime = chainActive.Height();
-    newTx.vin.push_back(ret_input);
-    newTx.vout.push_back(destOutput);
-    newTx.vout.push_back(destChangeOutput);
+    CMutableTransaction tx;
+    tx.nLockTime = chainActive.Height();
+    tx.vin.push_back(ret_input);
+    tx.vout.push_back(destOutput);
+    tx.vout.push_back(destChangeOutput);
 
     // Sign transaction
     std::string strError;
-    if (!pwallet->SignTokenTransaction(newTx, strError)) {
+    if (!pwallet->SignTokenTransaction(tx, strError)) {
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Issue signing token transaction");
     }
 
-    // Broadcast
-    CValidationState state;
-    CAmount maxTxFee = 0 * COIN;
-    CWalletTx wtx(pwallet, MakeTransactionRef(newTx));
-    if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
-        LogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", FormatStateMessage(state));
-        return NullUniValue;
+    // Broadcast transaction
+    CWalletTx wtx(pwallet, MakeTransactionRef(tx));
+    if (!wtx.RelayWalletTransaction(g_connman.get())) {
+        LogPrintf("RelayWalletTransaction(): Error during transaction broadcast!");
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
-
-    wtx.RelayWalletTransaction(g_connman.get());
 
     return wtx.GetHash().ToString();
 }
 
+UniValue tokenrebuild(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0) {
+        throw std::runtime_error(
+            "tokenrebuild\n"
+            "\nRebuild issuances/token database by rescanning the chain.\n"
+            "\nArguments:\n"
+            "none\n"
+        );
+    }
+
+    {
+        LOCK(cs_main);
+        int last_height = chainActive.Height();
+        const Consensus::Params& params = Params().GetConsensus();
+        tokendb->ResetIssuanceState();
+        RescanBlocksForTokenData(last_height, params);
+    }
+
+    return NullUniValue;
+}
+
+UniValue tokenissuances(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0) {
+        throw std::runtime_error(
+            "tokenissuances\n"
+            "\nList known token issuances.\n"
+            "\nArguments:\n"
+            "none\n"
+        );
+    }
+
+    UniValue issuances(UniValue::VOBJ);
+    {
+        LOCK(cs_main);
+        for (CToken& token : known_issuances) {
+            UniValue issuance(UniValue::VOBJ);
+            issuance.pushKV("version", strprintf("%02x", token.getVersion()));
+            issuance.pushKV("type", strprintf("%04x", token.getType()));
+            issuance.pushKV("identifier", strprintf("%016x", token.getId()));
+            issuance.pushKV("origintx", token.getOriginTx().ToString());
+            issuances.pushKV(token.getName(), issuance);
+        }
+    }
+
+    return issuances;
+}
 
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
     { "token",              "tokendecode",            &tokendecode,             {"script" } },
-    { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount" } },
+    { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount", "checksum" } },
     { "token",              "tokenlist",              &tokenlist,               {"name" } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
+    { "token",              "tokenrebuild",           &tokenrebuild,            { } },
+    { "token",              "tokenissuances",         &tokenissuances,          { } },
 };
 
 void RegisterTokenRPCCommands(CRPCTable &tableRPC)

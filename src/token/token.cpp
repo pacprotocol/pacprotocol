@@ -8,6 +8,32 @@
 opcodetype GetOpcode(int n);
 int GetIntFromOpcode(opcodetype n);
 
+void build_checksum_script(CScript& checksum_script, uint160& checksum_input)
+{
+    checksum_script.clear();
+    checksum_script = CScript() << OP_TOKEN
+                                << OP_0
+                                << OP_DROP
+                                << OP_DUP
+                                << OP_HASH160
+                                << ToByteVector(checksum_input)
+                                << OP_EQUALVERIFY
+                                << OP_CHECKSIG;
+}
+
+bool decode_checksum_script(CScript& checksum_script, uint160& checksum_output)
+{
+    if (!checksum_script.IsChecksumData()) {
+        return false;
+    }
+
+    //! retrieve checksum from hash160
+    std::vector<unsigned char> vecCksum(checksum_script.end() - 22, checksum_script.end() - 2);
+    memcpy(&checksum_output, vecCksum.data(), 20);
+
+    return true;
+}
+
 void build_token_script(CScript& token_script, const uint8_t version, const uint16_t type, uint64_t& identifier, std::string& name, CScript& scriptPubKey)
 {
     token_script.clear();

@@ -433,6 +433,7 @@ public:
         consensus.nHardenedStakeCheckHeight = 387939;
         consensus.nProtocolUpdate = 700000;
         consensus.nPrevStakeChecks = 697750;
+        consensus.nTokenHeight = std::numeric_limits<int>::max();
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000000000927c0");  // 600000
@@ -634,6 +635,7 @@ public:
         consensus.nHardenedStakeCheckHeight = 0;
         consensus.nProtocolUpdate = 0;
         consensus.nPrevStakeChecks = 0;
+        consensus.nTokenHeight = 100;
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
