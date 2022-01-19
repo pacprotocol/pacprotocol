@@ -261,6 +261,87 @@ UniValue tokenbalance(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue tokenlist(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "tokenlist \"name\"\n"
+            "\nList all token transactions in wallet.\n"
+            "\nArguments:\n"
+            "\nNone.\n");
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    // Get current height
+    int height = chainActive.Height();
+
+    // Iterate wallet txes
+    UniValue result(UniValue::VARR);
+    {
+        LOCK(pwallet->cs_wallet);
+
+        for (auto it : pwallet->mapWallet) {
+
+            const CWalletTx& wtx = it.second;
+
+            if (wtx.IsCoinBase())
+                continue;
+
+            int n = 0;
+            for (const auto& out : wtx.tx->vout) {
+
+                CScript pk = out.scriptPubKey;
+                CAmount nValue = out.nValue;
+
+                if (pk.IsPayToToken()) {
+
+                    CToken token;
+                    if (!build_token_from_script(pk, token)) {
+                        continue;
+                    }
+                    CTxDestination address;
+                    ExtractDestination(pk, address);
+
+                    //! wtx_type false (received), true (sent)
+                    bool wtx_type = false;
+                    if (!IsMine(*pwallet, address)) {
+                        wtx_type = true;
+                    }
+
+                    //! create and fill entry
+                    std::string name = token.getName();
+
+                    UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("token", name);
+                    entry.pushKV("address", EncodeDestination(address));
+                    entry.pushKV("category", wtx_type ? "send" : "receive");
+                    entry.pushKV("amount", nValue);
+                    entry.pushKV("confirmations", height - mapBlockIndex[wtx.hashBlock]->nHeight);
+                    entry.pushKV("time", wtx.GetTxTime());
+                    entry.pushKV("block", wtx.hashBlock.ToString());
+                    UniValue outpoint(UniValue::VOBJ);
+                    outpoint.pushKV(wtx.tx->GetHash().ToString(), n);
+                    entry.pushKV("outpoint", outpoint);
+
+                    result.push_back(entry);
+                }
+                ++n;
+            }
+        }
+    }
+
+    return result;
+}
+
 UniValue tokensend(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -421,6 +502,7 @@ static const CRPCCommand commands[] =
     { "token",              "tokendecode",            &tokendecode,             {"script" } },
     { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount", "checksum" } },
     { "token",              "tokenbalance",           &tokenbalance,            {"name" } },
+    { "token",              "tokenlist",              &tokenlist,               { } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
