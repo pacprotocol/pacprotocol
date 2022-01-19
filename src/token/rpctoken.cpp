@@ -167,7 +167,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
     return wtx.GetHash().ToString();
 }
 
-UniValue tokenlist(const JSONRPCRequest& request)
+UniValue tokenbalance(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -178,8 +178,8 @@ UniValue tokenlist(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
-            "tokenlist \"name\"\n"
-            "\nList wallet information about received tokens.\n"
+            "tokenbalance \"name\"\n"
+            "\nList received tokens and their amount.\n"
             "\nArguments:\n"
             "1. \"name\"            (string, optional) Only show tokens matching name.\n");
 
@@ -420,7 +420,7 @@ static const CRPCCommand commands[] =
   //  --------------------- ------------------------  -----------------------
     { "token",              "tokendecode",            &tokendecode,             {"script" } },
     { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount", "checksum" } },
-    { "token",              "tokenlist",              &tokenlist,               {"name" } },
+    { "token",              "tokenbalance",           &tokenbalance,            {"name" } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
