@@ -2931,6 +2931,9 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
         if (!CheckFinalTx(*pcoin->tx))
             continue;
 
+        if (pcoin->IsTokenType())
+            continue;
+
         if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
             continue;
 

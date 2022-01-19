@@ -15,7 +15,7 @@ UniValue tokendecode(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "tokendecode \"name\"\n"
+            "tokendecode \"script\"\n"
             "\nDecode a token script.\n"
             "\nArguments:\n"
             "1. \"script\"            (string, required) The token script to decode.\n"
@@ -74,7 +74,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
             "1. \"address\"            (string, required) The PAC address to send to.\n"
             "2. \"name\"               (string, required) The token name.\n"
             "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
-            "4. \"checksum\"           (string, optional) The IPFS checksum to associate with this token.\n"
+            "4. \"checksum\"           (string, optional) The checksum to associate with this token.\n"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -167,7 +167,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
     return wtx.GetHash().ToString();
 }
 
-UniValue tokenlist(const JSONRPCRequest& request)
+UniValue tokenbalance(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -178,8 +178,8 @@ UniValue tokenlist(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
-            "tokenlist \"name\"\n"
-            "\nList wallet information about received tokens.\n"
+            "tokenbalance \"name\"\n"
+            "\nList received tokens and their amount.\n"
             "\nArguments:\n"
             "1. \"name\"            (string, optional) Only show tokens matching name.\n");
 
@@ -240,6 +240,7 @@ UniValue tokenlist(const JSONRPCRequest& request)
                     std::string name = token.getName();
 
                     UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("identifier", strprintf("%016x", token.getId()));
                     entry.pushKV("address", EncodeDestination(address));
                     entry.pushKV("amount", nValue);
 
@@ -252,6 +253,87 @@ UniValue tokenlist(const JSONRPCRequest& request)
                     } else if (use_filter && compare_token_name(filter_name, name)) {
                         result.pushKV(token.getName(), entry);
                     }
+                }
+                ++n;
+            }
+        }
+    }
+
+    return result;
+}
+
+UniValue tokenlist(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "tokenlist \"name\"\n"
+            "\nList all token transactions in wallet.\n"
+            "\nArguments:\n"
+            "\nNone.\n");
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    // Get current height
+    int height = chainActive.Height();
+
+    // Iterate wallet txes
+    UniValue result(UniValue::VARR);
+    {
+        LOCK(pwallet->cs_wallet);
+
+        for (auto it : pwallet->mapWallet) {
+
+            const CWalletTx& wtx = it.second;
+
+            if (wtx.IsCoinBase())
+                continue;
+
+            int n = 0;
+            for (const auto& out : wtx.tx->vout) {
+
+                CScript pk = out.scriptPubKey;
+                CAmount nValue = out.nValue;
+
+                if (pk.IsPayToToken()) {
+
+                    CToken token;
+                    if (!build_token_from_script(pk, token)) {
+                        continue;
+                    }
+                    CTxDestination address;
+                    ExtractDestination(pk, address);
+
+                    //! wtx_type false (received), true (sent)
+                    bool wtx_type = false;
+                    if (!IsMine(*pwallet, address)) {
+                        wtx_type = true;
+                    }
+
+                    //! create and fill entry
+                    std::string name = token.getName();
+
+                    UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("token", name);
+                    entry.pushKV("address", EncodeDestination(address));
+                    entry.pushKV("category", wtx_type ? "send" : "receive");
+                    entry.pushKV("amount", nValue);
+                    entry.pushKV("confirmations", height - mapBlockIndex[wtx.hashBlock]->nHeight);
+                    entry.pushKV("time", wtx.GetTxTime());
+                    entry.pushKV("block", wtx.hashBlock.ToString());
+                    UniValue outpoint(UniValue::VOBJ);
+                    outpoint.pushKV(wtx.tx->GetHash().ToString(), n);
+                    entry.pushKV("outpoint", outpoint);
+
+                    result.push_back(entry);
                 }
                 ++n;
             }
@@ -415,15 +497,247 @@ UniValue tokenissuances(const JSONRPCRequest& request)
     return issuances;
 }
 
+UniValue tokenchecksum(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokenchecksum \"name\"\n"
+            "\nRetrieve checksum hash for a given token.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to retrieve checksum from.\n"
+        );
+    }
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+
+    // Search and retrieve checksum
+    {
+        LOCK(cs_main);
+        for (CToken& token : known_issuances) {
+            if (strToken == token.getName()) {
+                //! fetch token origin tx
+                uint256 blockHash;
+                CTransactionRef tx;
+                uint256 origin = token.getOriginTx();
+                if (!GetTransaction(origin, tx, Params().GetConsensus(), blockHash)) {
+                    throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
+                }
+                //! fetch checksum output
+                for (unsigned int i = 0; i < tx->vout.size(); i++) {
+                    if (tx->vout[i].IsTokenChecksum()) {
+                        uint160 checksum_output;
+                        CScript checksum_script = tx->vout[i].scriptPubKey;
+                        if (!decode_checksum_script(checksum_script, checksum_output)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
+                        }
+                        return HexStr(checksum_output);
+                    }
+                }
+            }
+        }
+    }
+
+    return NullUniValue;
+}
+
+UniValue tokenhistory(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokenhistory \"name\"\n"
+            "\nFind latest token of type name and trace it all the way back to issuance.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to display history for.\n"
+        );
+    }
+
+    // Get current height
+    int height = chainActive.Height();
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+
+    // Retrieve token history
+    UniValue history(UniValue::VARR);
+    {
+        LOCK(cs_main);
+        COutPoint token_spend;
+        if (!FindLastTokenUse(strToken, token_spend, height, Params().GetConsensus())) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to find usage of token");
+        }
+
+        uint256 hash = token_spend.hash;
+        int n = token_spend.n;
+
+        while (true) {
+
+            // fetch transaction
+            uint256 blockHash;
+            CTransactionRef tx;
+            if (!GetTransaction(hash, tx, Params().GetConsensus(), blockHash)) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token transaction.");
+            }
+
+            // decode token
+            CToken token;
+            std::string strError;
+            CScript token_script = tx->vout[n].scriptPubKey;
+            if (!ContextualCheckToken(token_script, token, strError)) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Token data inconsistent.");
+            }
+
+            // add entry to history
+            UniValue entry(UniValue::VOBJ);
+            entry.pushKV("name", strToken);
+            entry.pushKV("type", token.isIssuance() ? "issuance" : "transfer");
+            entry.pushKV("amount", tx->vout[n].nValue);
+            entry.pushKV("height", mapBlockIndex[blockHash]->nHeight);
+            UniValue outpoint(UniValue::VOBJ);
+            outpoint.pushKV(hash.ToString(), n);
+            entry.pushKV("outpoint", outpoint);
+            history.push_back(entry);
+
+            // check when to bail
+            if (token.isIssuance()) {
+                break;
+            }
+
+            // check token
+            if (strToken != token.getName()) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Token data inconsistent.");
+            }
+
+            // get prevout for token
+            for (unsigned int i = 0; tx->vin.size(); i++) {
+                hash = tx->vin[i].prevout.hash;
+                n = tx->vin[i].prevout.n;
+                break;
+            }
+        }
+    }
+
+    return history;
+}
+
+UniValue tokeninfo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokeninfo \"name\"\n"
+            "\nOutputs token's information.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to show information.\n"
+        );
+    }
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+               
+    // Search and retrieve token and checksum
+    UniValue result(UniValue::VOBJ);
+    {
+        LOCK(cs_main);
+        for (CToken& token : known_issuances) {
+            if (strToken == token.getName()) {
+                //! fetch token origin tx
+                uint256 blockHash;
+                CTransactionRef tx;
+                uint256 origin_tx = token.getOriginTx();
+                if (!GetTransaction(origin_tx, tx, Params().GetConsensus(), blockHash)) {
+                    throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
+                }
+
+                UniValue entry(UniValue::VOBJ);
+                entry.pushKV("version", strprintf("%02x", token.getVersion()));
+                entry.pushKV("type", strprintf("%04x", token.getType()));
+                entry.pushKV("identifier", strprintf("%016x", token.getId()));
+
+                UniValue origin(UniValue::VOBJ);
+                origin.pushKV("tx", token.getOriginTx().ToString());
+
+                //! fetch token and checksum output from origin transactions
+                bool found_token = false;
+                bool found_checksum = false;
+                for (unsigned int i = 0; i < tx->vout.size(); i++) {
+                    if (tx->vout[i].IsTokenOutput()){
+                        uint8_t version;
+                        uint16_t type;
+                        uint64_t identifier;
+                        std::string name;
+                        CPubKey ownerKey;
+                        CScript token_script = tx->vout[i].scriptPubKey;
+                        if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, true)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token from origin transaction.");
+                        }
+                        CTxDestination address;
+                        ExtractDestination(token_script, address);
+                        CAmount amount = tx->vout[i].nValue;
+
+                        // The creator / origin address
+                        origin.pushKV("address", EncodeDestination(address));
+
+                        // @Barry
+                        // Not sure if this is correct. $YAN won't have max supply (I assume?). 
+                        // So perhaps maxsupply = -1 (or 0?) -> no max supply or not showing it at all make it sense
+                        // I'm not quite sure how to detect if there is no max supply or if we even have dynamic max supply.
+                        origin.pushKV("maxsupply", amount);
+                        found_token = true;
+                        if (found_token && found_checksum){
+                            break;
+                        }
+                    }
+                    if (tx->vout[i].IsTokenChecksum()) {
+                        uint160 checksum_output;
+                        CScript checksum_script = tx->vout[i].scriptPubKey;
+                        if (!decode_checksum_script(checksum_script, checksum_output)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
+                        }
+                        entry.pushKV("checksum", HexStr(checksum_output));
+                        found_checksum = true;
+                        if (found_token && found_checksum){
+                            break;
+                        }
+                    }
+                }
+
+                entry.pushKV("origin", origin);
+                result.pushKV(token.getName(), entry);
+
+                return result;
+            }
+        }
+    }
+
+    return NullUniValue;
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
     { "token",              "tokendecode",            &tokendecode,             {"script" } },
     { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount", "checksum" } },
-    { "token",              "tokenlist",              &tokenlist,               {"name" } },
+    { "token",              "tokenbalance",           &tokenbalance,            {"name" } },
+    { "token",              "tokenhistory",           &tokenhistory,            {"name" } },
+    { "token",              "tokenlist",              &tokenlist,               { } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
+    { "token",              "tokenchecksum",          &tokenchecksum,           {"name" } },
+    { "token",              "tokeninfo",              &tokeninfo,               {"name" } },
 };
 
 void RegisterTokenRPCCommands(CRPCTable &tableRPC)

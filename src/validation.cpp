@@ -658,17 +658,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.DoS(100, false, REJECT_INVALID, "qc-not-allowed");
     }
 
-    if (ptx->HasTokenOutput()) {
-        if (!are_tokens_active()) {
-            return error("%s: CheckToken: token layer is not currently active", __func__);
-        }
-    }
-
-    std::string tokenError;
-    if (!CheckToken(ptx, true, tokenError, chainparams.GetConsensus())) {
-        return error("%s: CheckToken: %s", __func__, tokenError);
-    }
-
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "coinbase");
@@ -904,6 +893,16 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             LimitMempoolSize(pool, gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000, gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
             if (!pool.exists(hash))
                 return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool full");
+        }
+    }
+
+    if (ptx->HasTokenOutput()) {
+        if (!are_tokens_active()) {
+            return error("%s: CheckToken: token layer is not currently active", __func__);
+        }
+        std::string tokenError;
+        if (!CheckToken(ptx, true, tokenError, chainparams.GetConsensus())) {
+            return error("%s: CheckToken: %s", __func__, tokenError);
         }
     }
 
@@ -2333,7 +2332,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 return error("%s: CheckToken: token layer is not currently active", __func__);
             }
             std::string tokenError;
-            if (!CheckToken(MakeTransactionRef(tx), true, tokenError, chainparams.GetConsensus())) {
+            if (!CheckToken(MakeTransactionRef(tx), false, tokenError, chainparams.GetConsensus())) {
                 return error("%s: CheckToken: %s", __func__, tokenError);
             }
         }

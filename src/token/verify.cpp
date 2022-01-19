@@ -113,13 +113,12 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
                 return false;
             }
 
-            //! issuance token cant check previn
+            //! check if issuance token is unique
             if (token.getType() == CToken::ISSUANCE) {
                 if (!CheckTokenIssuance(tx, onlyCheck, strError)) {
                     strError = "token-already-issued";
                     return false;
                 }
-                continue;
             }
 
             //! keep identifier and name
@@ -137,10 +136,25 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
                     return false;
                 }
 
-                //! is the output a token?
-                if (!inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey.IsPayToToken()) {
-                    strError = "token-prevout-isinvalid";
-                    return false;
+                // check if issuances inputs are token related
+                uint16_t tokenType = token.getType();
+                bool isPrevToken = inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey.IsPayToToken();
+                switch (tokenType) {
+                    case CToken::ISSUANCE:
+                        if (isPrevToken) {
+                            strError = "token-issuance-prevout-not-standard";
+                            return false;
+                        }
+                        continue;
+                    case CToken::TRANSFER:
+                        if (!isPrevToken) {
+                            strError = "token-transfer-prevout-is-invalid";
+                            return false;
+                        }
+                        break;
+                    case CToken::NONE:
+                        strError = "token-type-unusable";
+                        return false;
                 }
 
                 //! extract prevtoken data from the output
@@ -198,4 +212,48 @@ void RescanBlocksForTokenData(int lastHeight, const Consensus::Params& params)
             }
         }
     }
+}
+
+bool FindLastTokenUse(std::string& name, COutPoint& token_spend, int lastHeight, const Consensus::Params& params)
+{
+    for (int height = lastHeight; height > params.nTokenHeight; --height) {
+
+        // fetch index for current height
+        const CBlockIndex* pindex = chainActive[height];
+
+        // read block from disk
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindex, params)) {
+            continue;
+        }
+
+        for (unsigned int i = 0; i < block.vtx.size(); i++) {
+
+            // search for token transactions
+            const CTransactionRef& tx = block.vtx[i];
+            if (!tx->HasTokenOutput()) {
+                continue;
+            }
+
+            for (unsigned int j = 0; j < tx->vout.size(); j++) {
+
+                // parse each token transaction
+                CToken token;
+                std::string strError;
+                CScript token_script = tx->vout[j].scriptPubKey;
+                if (!ContextualCheckToken(token_script, token, strError)) {
+                    continue;
+                }
+
+                // check if it matches
+                if (name == token.getName()) {
+                    token_spend.hash = tx->GetHash();
+                    token_spend.n = j;
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
