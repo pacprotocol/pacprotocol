@@ -496,6 +496,54 @@ UniValue tokenissuances(const JSONRPCRequest& request)
     return issuances;
 }
 
+UniValue tokenchecksum(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokenchecksum \"name\"\n"
+            "\nRetrieve checksum hash for a given token.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to retrieve checksum from.\n"
+        );
+    }
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+
+    // Search and retrieve checksum
+    {
+        LOCK(cs_main);
+        for (CToken& token : known_issuances) {
+            if (strToken == token.getName()) {
+                //! fetch token origin tx
+                uint256 blockHash;
+                CTransactionRef tx;
+                uint256 origin = token.getOriginTx();
+                if (!GetTransaction(origin, tx, Params().GetConsensus(), blockHash)) {
+                    throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
+                }
+                //! fetch checksum output
+                for (unsigned int i = 0; i < tx->vout.size(); i++) {
+                    if (tx->vout[i].IsTokenChecksum()) {
+                        uint160 checksum_output;
+                        CScript checksum_script = tx->vout[i].scriptPubKey;
+                        if (!decode_checksum_script(checksum_script, checksum_output)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
+                        }
+                        return HexStr(checksum_output);
+                    }
+                }
+            }
+        }
+    }
+
+    return NullUniValue;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
@@ -506,6 +554,7 @@ static const CRPCCommand commands[] =
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
+    { "token",              "tokenchecksum",          &tokenchecksum,           {"name" } },
 };
 
 void RegisterTokenRPCCommands(CRPCTable &tableRPC)
