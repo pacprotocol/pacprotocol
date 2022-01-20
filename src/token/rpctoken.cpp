@@ -544,12 +544,96 @@ UniValue tokenchecksum(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue tokenhistory(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokenhistory \"name\"\n"
+            "\nFind latest token of type name and trace it all the way back to issuance.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to display history for.\n"
+        );
+    }
+
+    // Get current height
+    int height = chainActive.Height();
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+
+    // Retrieve token history
+    UniValue history(UniValue::VARR);
+    {
+        LOCK(cs_main);
+        COutPoint token_spend;
+        if (!FindLastTokenUse(strToken, token_spend, height, Params().GetConsensus())) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to find usage of token");
+        }
+
+        uint256 hash = token_spend.hash;
+        int n = token_spend.n;
+
+        while (true) {
+
+            // fetch transaction
+            uint256 blockHash;
+            CTransactionRef tx;
+            if (!GetTransaction(hash, tx, Params().GetConsensus(), blockHash)) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token transaction.");
+            }
+
+            // decode token
+            CToken token;
+            std::string strError;
+            CScript token_script = tx->vout[n].scriptPubKey;
+            if (!ContextualCheckToken(token_script, token, strError)) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Token data inconsistent.");
+            }
+
+            // add entry to history
+            UniValue entry(UniValue::VOBJ);
+            entry.pushKV("name", strToken);
+            entry.pushKV("type", token.isIssuance() ? "issuance" : "transfer");
+            entry.pushKV("amount", tx->vout[n].nValue);
+            entry.pushKV("height", mapBlockIndex[blockHash]->nHeight);
+            UniValue outpoint(UniValue::VOBJ);
+            outpoint.pushKV(hash.ToString(), n);
+            entry.pushKV("outpoint", outpoint);
+            history.push_back(entry);
+
+            // check when to bail
+            if (token.isIssuance()) {
+                break;
+            }
+
+            // check token
+            if (strToken != token.getName()) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Token data inconsistent.");
+            }
+
+            // get prevout for token
+            for (unsigned int i = 0; tx->vin.size(); i++) {
+                hash = tx->vin[i].prevout.hash;
+                n = tx->vin[i].prevout.n;
+                break;
+            }
+        }
+    }
+
+    return history;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
     { "token",              "tokendecode",            &tokendecode,             {"script" } },
     { "token",              "tokenmint",              &tokenmint,               {"address", "name", "amount", "checksum" } },
     { "token",              "tokenbalance",           &tokenbalance,            {"name" } },
+    { "token",              "tokenhistory",           &tokenhistory,            {"name" } },
     { "token",              "tokenlist",              &tokenlist,               { } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },

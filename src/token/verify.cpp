@@ -199,3 +199,47 @@ void RescanBlocksForTokenData(int lastHeight, const Consensus::Params& params)
         }
     }
 }
+
+bool FindLastTokenUse(std::string& name, COutPoint& token_spend, int lastHeight, const Consensus::Params& params)
+{
+    for (int height = lastHeight; height > params.nTokenHeight; --height) {
+
+        // fetch index for current height
+        const CBlockIndex* pindex = chainActive[height];
+
+        // read block from disk
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindex, params)) {
+            continue;
+        }
+
+        for (unsigned int i = 0; i < block.vtx.size(); i++) {
+
+            // search for token transactions
+            const CTransactionRef& tx = block.vtx[i];
+            if (!tx->HasTokenOutput()) {
+                continue;
+            }
+
+            for (unsigned int j = 0; j < tx->vout.size(); j++) {
+
+                // parse each token transaction
+                CToken token;
+                std::string strError;
+                CScript token_script = tx->vout[j].scriptPubKey;
+                if (!ContextualCheckToken(token_script, token, strError)) {
+                    continue;
+                }
+
+                // check if it matches
+                if (name == token.getName()) {
+                    token_spend.hash = tx->GetHash();
+                    token_spend.n = j;
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
