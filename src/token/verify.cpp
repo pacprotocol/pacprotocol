@@ -113,13 +113,12 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
                 return false;
             }
 
-            //! issuance token cant check previn
+            //! check if issuance token is unique
             if (token.getType() == CToken::ISSUANCE) {
                 if (!CheckTokenIssuance(tx, onlyCheck, strError)) {
                     strError = "token-already-issued";
                     return false;
                 }
-                continue;
             }
 
             //! keep identifier and name
@@ -137,8 +136,18 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
                     return false;
                 }
 
+                // check if issuance's input is standard
+                bool isPrevToken = inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey.IsPayToToken();
+                if (token.getType() == CToken::ISSUANCE) {
+                    if (isPrevToken) {
+                        strError = "token-issuance-prevout-not-standard";
+                        return false;
+                    }
+                    continue;
+                }
+
                 //! is the output a token?
-                if (!inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey.IsPayToToken()) {
+                if (!isPrevToken) {
                     strError = "token-prevout-isinvalid";
                     return false;
                 }
