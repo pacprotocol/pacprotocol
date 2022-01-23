@@ -15,7 +15,7 @@ UniValue tokendecode(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "tokendecode \"name\"\n"
+            "tokendecode \"script\"\n"
             "\nDecode a token script.\n"
             "\nArguments:\n"
             "1. \"script\"            (string, required) The token script to decode.\n"
@@ -74,7 +74,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
             "1. \"address\"            (string, required) The PAC address to send to.\n"
             "2. \"name\"               (string, required) The token name.\n"
             "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
-            "4. \"checksum\"           (string, optional) The IPFS checksum to associate with this token.\n"
+            "4. \"checksum\"           (string, optional) The checksum to associate with this token.\n"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -240,6 +240,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                     std::string name = token.getName();
 
                     UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("identifier", strprintf("%016x", token.getId()));
                     entry.pushKV("address", EncodeDestination(address));
                     entry.pushKV("amount", nValue);
 
@@ -627,6 +628,66 @@ UniValue tokenhistory(const JSONRPCRequest& request)
     return history;
 }
 
+UniValue tokeninfo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "tokeninfo \"name\"\n"
+            "\nOutputs token's information.\n"
+            "\nArguments:\n"
+            "1. \"name\"            (string, required) The token to show information.\n"
+        );
+    }
+
+    // Name
+    std::string strToken = request.params[0].get_str();
+    strip_control_chars(strToken);
+    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
+    }
+               
+    // Search and retrieve checksum
+    UniValue result(UniValue::VOBJ);
+    {
+        LOCK(cs_main);
+        for (CToken& token : known_issuances) {
+            if (strToken == token.getName()) {
+                //! fetch token origin tx
+                uint256 blockHash;
+                CTransactionRef tx;
+                uint256 origin = token.getOriginTx();
+                if (!GetTransaction(origin, tx, Params().GetConsensus(), blockHash)) {
+                    throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
+                }
+
+                result.pushKV("version", strprintf("%02x", token.getVersion()));
+                result.pushKV("type", strprintf("%04x", token.getType()));
+                result.pushKV("identifier", strprintf("%016x", token.getId()));
+                result.pushKV("name", token.getName());
+                result.pushKV("origintx", token.getOriginTx().ToString());
+
+                //! fetch checksum output
+                for (unsigned int i = 0; i < tx->vout.size(); i++) {
+                    if (tx->vout[i].IsTokenChecksum()) {
+                        uint160 checksum_output;
+                        CScript checksum_script = tx->vout[i].scriptPubKey;
+                        if (!decode_checksum_script(checksum_script, checksum_output)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
+                        }
+
+                        result.pushKV("checksum", HexStr(checksum_output));
+                        break;
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
+    return NullUniValue;
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
@@ -639,6 +700,7 @@ static const CRPCCommand commands[] =
     { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
     { "token",              "tokenchecksum",          &tokenchecksum,           {"name" } },
+    { "token",              "tokeninfo",              &tokeninfo,               {"name" } },
 };
 
 void RegisterTokenRPCCommands(CRPCTable &tableRPC)
