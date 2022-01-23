@@ -646,8 +646,8 @@ UniValue tokeninfo(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
     }
                
-    // Search and retrieve checksum
-    UniValue result(UniValue::VARR);
+    // Search and retrieve token and checksum
+    UniValue result(UniValue::VOBJ);
     {
         LOCK(cs_main);
         for (CToken& token : known_issuances) {
@@ -655,8 +655,8 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                 //! fetch token origin tx
                 uint256 blockHash;
                 CTransactionRef tx;
-                uint256 origin = token.getOriginTx();
-                if (!GetTransaction(origin, tx, Params().GetConsensus(), blockHash)) {
+                uint256 origin_tx = token.getOriginTx();
+                if (!GetTransaction(origin_tx, tx, Params().GetConsensus(), blockHash)) {
                     throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
                 }
 
@@ -664,10 +664,41 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                 entry.pushKV("version", strprintf("%02x", token.getVersion()));
                 entry.pushKV("type", strprintf("%04x", token.getType()));
                 entry.pushKV("identifier", strprintf("%016x", token.getId()));
-                entry.pushKV("origintx", token.getOriginTx().ToString());
 
-                //! fetch checksum output
+                UniValue origin(UniValue::VOBJ);
+                origin.pushKV("tx", token.getOriginTx().ToString());
+
+                //! fetch token and checksum output from origin transactions
+                bool found_token = false;
+                bool found_checksum = false;
                 for (unsigned int i = 0; i < tx->vout.size(); i++) {
+                    if (tx->vout[i].IsTokenOutput()){
+                        uint8_t version;
+                        uint16_t type;
+                        uint64_t identifier;
+                        std::string name;
+                        CPubKey ownerKey;
+                        CScript token_script = tx->vout[i].scriptPubKey;
+                        if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, true)) {
+                            throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token from origin transaction.");
+                        }
+                        CTxDestination address;
+                        ExtractDestination(token_script, address);
+                        CAmount amount = tx->vout[i].nValue;
+
+                        // The creator / origin address
+                        origin.pushKV("address", EncodeDestination(address));
+
+                        // @Barry
+                        // Not sure if this is correct. $YAN won't have max supply (I assume?). 
+                        // So perhaps maxsupply = -1 (or 0?) -> no max supply or not showing it at all make it sense
+                        // I'm not quite sure how to detect if there is no max supply or if we even have dynamic max supply.
+                        origin.pushKV("maxsupply", amount);
+                        found_token = true;
+                        if (found_token && found_checksum){
+                            break;
+                        }
+                    }
                     if (tx->vout[i].IsTokenChecksum()) {
                         uint160 checksum_output;
                         CScript checksum_script = tx->vout[i].scriptPubKey;
@@ -675,9 +706,14 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                             throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
                         }
                         entry.pushKV("checksum", HexStr(checksum_output));
-                        break;
+                        found_checksum = true;
+                        if (found_token && found_checksum){
+                            break;
+                        }
                     }
                 }
+
+                entry.pushKV("origin", origin);
                 result.pushKV(token.getName(), entry);
 
                 return result;
