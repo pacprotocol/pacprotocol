@@ -240,6 +240,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                     std::string name = token.getName();
 
                     UniValue entry(UniValue::VOBJ);
+                    entry.pushKV("identifier", strprintf("%016x", token.getId()));
                     entry.pushKV("address", EncodeDestination(address));
                     entry.pushKV("amount", nValue);
 
