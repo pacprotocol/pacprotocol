@@ -74,7 +74,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
             "1. \"address\"            (string, required) The PAC address to send to.\n"
             "2. \"name\"               (string, required) The token name.\n"
             "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
-            "4. \"checksum\"           (string, optional) The IPFS checksum to associate with this token.\n"
+            "4. \"checksum\"           (string, optional) The checksum to associate with this token.\n"
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
