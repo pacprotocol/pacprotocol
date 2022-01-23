@@ -647,7 +647,7 @@ UniValue tokeninfo(const JSONRPCRequest& request)
     }
                
     // Search and retrieve checksum
-    UniValue result(UniValue::VOBJ);
+    UniValue result(UniValue::VARR);
     {
         LOCK(cs_main);
         for (CToken& token : known_issuances) {
@@ -660,11 +660,11 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                     throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve token origin transaction.");
                 }
 
-                result.pushKV("version", strprintf("%02x", token.getVersion()));
-                result.pushKV("type", strprintf("%04x", token.getType()));
-                result.pushKV("identifier", strprintf("%016x", token.getId()));
-                result.pushKV("name", token.getName());
-                result.pushKV("origintx", token.getOriginTx().ToString());
+                UniValue entry(UniValue::VOBJ);
+                entry.pushKV("version", strprintf("%02x", token.getVersion()));
+                entry.pushKV("type", strprintf("%04x", token.getType()));
+                entry.pushKV("identifier", strprintf("%016x", token.getId()));
+                entry.pushKV("origintx", token.getOriginTx().ToString());
 
                 //! fetch checksum output
                 for (unsigned int i = 0; i < tx->vout.size(); i++) {
@@ -674,11 +674,12 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                         if (!decode_checksum_script(checksum_script, checksum_output)) {
                             throw JSONRPCError(RPC_TYPE_ERROR, "Could not retrieve checksum from token origin transaction.");
                         }
-
-                        result.pushKV("checksum", HexStr(checksum_output));
+                        entry.pushKV("checksum", HexStr(checksum_output));
                         break;
                     }
                 }
+                result.pushKV(token.getName(), entry);
+
                 return result;
             }
         }
