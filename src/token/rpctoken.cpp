@@ -15,7 +15,7 @@ UniValue tokendecode(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "tokendecode \"name\"\n"
+            "tokendecode \"script\"\n"
             "\nDecode a token script.\n"
             "\nArguments:\n"
             "1. \"script\"            (string, required) The token script to decode.\n"
