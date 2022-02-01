@@ -42,6 +42,7 @@
 #include <txdb.h>
 #include <txmempool.h>
 #include <torcontrol.h>
+#include <token/index.h>
 #include <ui_interface.h>
 #include <util.h>
 #include <utilmoneystr.h>
@@ -2154,6 +2155,9 @@ bool AppInitMain()
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
     }
+
+    // Right after blockindex has loaded, time to rescan for token metadata
+    BlockUntilTokenMetadataSynced();
 
     fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
     CAutoFile est_filein(fsbridge::fopen(est_path, "rb"), SER_DISK, CLIENT_VERSION);

@@ -183,36 +183,6 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
     return true;
 }
 
-void RescanBlocksForTokenData(int lastHeight, const Consensus::Params& params)
-{
-    for (int height = params.nTokenHeight; height < lastHeight; height++) {
-
-        // fetch index for current height
-        const CBlockIndex* pindex = chainActive[height];
-
-        // read block from disk
-        CBlock block;
-        if (!ReadBlockFromDisk(block, pindex, params)) {
-            continue;
-        }
-
-        for (unsigned int i = 0; i < block.vtx.size(); i++) {
-
-            // search for token transactions
-            const CTransactionRef& tx = block.vtx[i];
-            if (!tx->HasTokenOutput()) {
-                continue;
-            }
-
-            //! parse each token transaction
-            std::string strError;
-            if (!CheckToken(tx, false, strError, params)) {
-                continue;
-            }
-        }
-    }
-}
-
 bool FindLastTokenUse(std::string& name, COutPoint& token_spend, int lastHeight, const Consensus::Params& params)
 {
     for (int height = lastHeight; height > params.nTokenHeight; --height) {

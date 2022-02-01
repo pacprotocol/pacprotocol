@@ -379,6 +379,8 @@ libdash_server_a_SOURCES = \
   statsd_client.cpp \
   timedata.cpp \
   torcontrol.cpp \
+  token/index.cpp \
+  token/index.h \
   token/rpctoken.cpp \
   token/token.cpp \
   token/token.h \
