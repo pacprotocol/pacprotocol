@@ -8,8 +8,8 @@
 #include <amount.h>
 #include <logging.h>
 #include <pubkey.h>
-#include <serialize.h>
 #include <script/script.h>
+#include <serialize.h>
 #include <token/util.h>
 #include <utilstrencodings.h>
 
@@ -25,7 +25,6 @@ const CAmount TOKEN_VALUEMAX = std::numeric_limits<int>::max();
 class CToken {
 
 private:
-
     uint8_t version;
     uint16_t type;
     uint64_t uid;
@@ -33,7 +32,6 @@ private:
     uint256 origintx;
 
 public:
-
     static const uint8_t CURRENT_VERSION = 0x01;
 
     enum {

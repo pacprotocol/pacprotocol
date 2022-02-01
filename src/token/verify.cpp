@@ -125,8 +125,7 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
             std::string tokenName = token.getName();
 
             //! check token inputs
-            for (unsigned int n = 0; n < tx->vin.size(); n++)
-            {
+            for (unsigned int n = 0; n < tx->vin.size(); n++) {
                 //! retrieve prevtx
                 uint256 prevBlockHash;
                 CTransactionRef inputPrev;
@@ -139,21 +138,21 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
                 uint16_t tokenType = token.getType();
                 bool isPrevToken = inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey.IsPayToToken();
                 switch (tokenType) {
-                    case CToken::ISSUANCE:
-                        if (isPrevToken) {
-                            strError = "token-issuance-prevout-not-standard";
-                            return false;
-                        }
-                        continue;
-                    case CToken::TRANSFER:
-                        if (!isPrevToken) {
-                            strError = "token-transfer-prevout-is-invalid";
-                            return false;
-                        }
-                        break;
-                    case CToken::NONE:
-                        strError = "token-type-unusable";
+                case CToken::ISSUANCE:
+                    if (isPrevToken) {
+                        strError = "token-issuance-prevout-not-standard";
                         return false;
+                    }
+                    continue;
+                case CToken::TRANSFER:
+                    if (!isPrevToken) {
+                        strError = "token-transfer-prevout-is-invalid";
+                        return false;
+                    }
+                    break;
+                case CToken::NONE:
+                    strError = "token-type-unusable";
+                    return false;
                 }
 
                 //! extract prevtoken data from the output

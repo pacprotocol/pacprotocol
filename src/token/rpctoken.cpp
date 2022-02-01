@@ -6,9 +6,9 @@
 #include <rpc/server.h>
 #include <token/util.h>
 #include <token/verify.h>
-#include <wallet/wallet.h>
-#include <wallet/rpcwallet.h>
 #include <validation.h>
+#include <wallet/rpcwallet.h>
+#include <wallet/wallet.h>
 
 UniValue tokendecode(const JSONRPCRequest& request)
 {
@@ -17,8 +17,7 @@ UniValue tokendecode(const JSONRPCRequest& request)
             "tokendecode \"script\"\n"
             "\nDecode a token script.\n"
             "\nArguments:\n"
-            "1. \"script\"            (string, required) The token script to decode.\n"
-        );
+            "1. \"script\"            (string, required) The token script to decode.\n");
     }
 
     // Script
@@ -68,18 +67,16 @@ UniValue tokenmint(const JSONRPCRequest& request)
         throw std::runtime_error(
             "tokenmint \"address\" \"name\" amount \"checksum\"\n"
             "\nMint an amount of token, to a given address.\n"
-            + HelpRequiringPassphrase(pwallet) +
-            "\nArguments:\n"
-            "1. \"address\"            (string, required) The PAC address to send to.\n"
-            "2. \"name\"               (string, required) The token name.\n"
-            "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
-            "4. \"checksum\"           (string, optional) The checksum to associate with this token.\n"
-            "\nResult:\n"
-            "\"txid\"                  (string) The transaction id.\n"
-            "\nExamples:\n"
+            + HelpRequiringPassphrase(pwallet) + "\nArguments:\n"
+                                                 "1. \"address\"            (string, required) The PAC address to send to.\n"
+                                                 "2. \"name\"               (string, required) The token name.\n"
+                                                 "3. \"amount\"             (numeric or string, required) The amount to mint.\n"
+                                                 "4. \"checksum\"           (string, optional) The checksum to associate with this token.\n"
+                                                 "\nResult:\n"
+                                                 "\"txid\"                  (string) The transaction id.\n"
+                                                 "\nExamples:\n"
             + HelpExampleCli("tokenmint", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\" \"BAZ\" 100000")
-            + HelpExampleRpc("tokenmint", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000")
-        );
+            + HelpExampleRpc("tokenmint", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000"));
     }
 
     // Prevent tokenmint while still in blocksync
@@ -120,7 +117,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
 
     // Build script
     uint64_t identifier;
-    CScript issuance_script;    
+    CScript issuance_script;
     get_next_issuance_id(identifier);
     CScript token_destination = GetScriptForDestination(dest);
     build_token_script(issuance_script, CToken::CURRENT_VERSION, CToken::ISSUANCE, identifier, strToken, token_destination);
@@ -140,10 +137,10 @@ UniValue tokenmint(const JSONRPCRequest& request)
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = {issuance_script, usingChecksum ? nAmount + 1000 : nAmount , false};
+    CRecipient recipient = { issuance_script, usingChecksum ? nAmount + 1000 : nAmount, false };
     vecSend.push_back(recipient);
     if (usingChecksum) {
-        CRecipient checksum_recipient = {checksum_script, 1000, false};
+        CRecipient checksum_recipient = { checksum_script, 1000, false };
         vecSend.push_back(checksum_recipient);
     }
     CTransactionRef tx;
@@ -350,17 +347,15 @@ UniValue tokensend(const JSONRPCRequest& request)
         throw std::runtime_error(
             "tokensend \"address\" \"name\" amount\n"
             "\nSend an amount of token, to a given address.\n"
-            + HelpRequiringPassphrase(pwallet) +
-            "\nArguments:\n"
-            "1. \"address\"            (string, required) The PAC address to send to.\n"
-            "2. \"name\"               (string, required) The token name.\n"
-            "3. \"amount\"             (numeric or string, required) The amount to send.\n"
-            "\nResult:\n"
-            "\"txid\"                  (string) The transaction id.\n"
-            "\nExamples:\n"
+            + HelpRequiringPassphrase(pwallet) + "\nArguments:\n"
+                                                 "1. \"address\"            (string, required) The PAC address to send to.\n"
+                                                 "2. \"name\"               (string, required) The token name.\n"
+                                                 "3. \"amount\"             (numeric or string, required) The amount to send.\n"
+                                                 "\nResult:\n"
+                                                 "\"txid\"                  (string) The transaction id.\n"
+                                                 "\nExamples:\n"
             + HelpExampleCli("tokensend", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\" \"BAZ\" 100000")
-            + HelpExampleRpc("tokensend", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000")
-        );
+            + HelpExampleRpc("tokensend", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\", \"BAZ\", 10000"));
     }
 
     // Prevent tokensend while still in blocksync
@@ -449,8 +444,7 @@ UniValue tokenissuances(const JSONRPCRequest& request)
             "tokenissuances\n"
             "\nList known token issuances.\n"
             "\nArguments:\n"
-            "none\n"
-        );
+            "none\n");
     }
 
     UniValue issuances(UniValue::VOBJ);
@@ -476,8 +470,7 @@ UniValue tokenchecksum(const JSONRPCRequest& request)
             "tokenchecksum \"name\"\n"
             "\nRetrieve checksum hash for a given token.\n"
             "\nArguments:\n"
-            "1. \"name\"            (string, required) The token to retrieve checksum from.\n"
-        );
+            "1. \"name\"            (string, required) The token to retrieve checksum from.\n");
     }
 
     // Name
@@ -524,8 +517,7 @@ UniValue tokenhistory(const JSONRPCRequest& request)
             "tokenhistory \"name\"\n"
             "\nFind latest token of type name and trace it all the way back to issuance.\n"
             "\nArguments:\n"
-            "1. \"name\"            (string, required) The token to display history for.\n"
-        );
+            "1. \"name\"            (string, required) The token to display history for.\n");
     }
 
     // Get current height
@@ -607,8 +599,7 @@ UniValue tokeninfo(const JSONRPCRequest& request)
             "tokeninfo \"name\"\n"
             "\nOutputs token's information.\n"
             "\nArguments:\n"
-            "1. \"name\"            (string, required) The token to show information.\n"
-        );
+            "1. \"name\"            (string, required) The token to show information.\n");
     }
 
     // Name
@@ -617,7 +608,7 @@ UniValue tokeninfo(const JSONRPCRequest& request)
     if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
     }
-               
+
     // Search and retrieve token and checksum
     UniValue result(UniValue::VOBJ);
     {
@@ -644,7 +635,7 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                 bool found_token = false;
                 bool found_checksum = false;
                 for (unsigned int i = 0; i < tx->vout.size(); i++) {
-                    if (tx->vout[i].IsTokenOutput()){
+                    if (tx->vout[i].IsTokenOutput()) {
                         uint8_t version;
                         uint16_t type;
                         uint64_t identifier;
@@ -657,17 +648,10 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                         CTxDestination address;
                         ExtractDestination(token_script, address);
                         CAmount amount = tx->vout[i].nValue;
-
-                        // The creator / origin address
                         origin.pushKV("address", EncodeDestination(address));
-
-                        // @Barry
-                        // Not sure if this is correct. $YAN won't have max supply (I assume?). 
-                        // So perhaps maxsupply = -1 (or 0?) -> no max supply or not showing it at all make it sense
-                        // I'm not quite sure how to detect if there is no max supply or if we even have dynamic max supply.
                         origin.pushKV("maxsupply", amount);
                         found_token = true;
-                        if (found_token && found_checksum){
+                        if (found_token && found_checksum) {
                             break;
                         }
                     }
@@ -679,7 +663,7 @@ UniValue tokeninfo(const JSONRPCRequest& request)
                         }
                         entry.pushKV("checksum", HexStr(checksum_output));
                         found_checksum = true;
-                        if (found_token && found_checksum){
+                        if (found_token && found_checksum) {
                             break;
                         }
                     }
@@ -696,7 +680,6 @@ UniValue tokeninfo(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
@@ -711,9 +694,8 @@ static const CRPCCommand commands[] =
     { "token",              "tokeninfo",              &tokeninfo,               {"name" } },
 };
 
-void RegisterTokenRPCCommands(CRPCTable &tableRPC)
+void RegisterTokenRPCCommands(CRPCTable& tableRPC)
 {
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
         tableRPC.appendCommand(commands[vcidx].name, &commands[vcidx]);
 }
-

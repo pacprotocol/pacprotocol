@@ -62,7 +62,8 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
 
         //! version
         version = GetIntFromOpcode((opcodetype)token_script[byteoffset]);
-        if (version != 0x01) throw std::exception();
+        if (version != 0x01)
+            throw std::exception();
         byteoffset += 1;
         if (debug)
             LogPrint(BCLog::TOKEN, "version ok (%d)\n", version);
@@ -88,7 +89,8 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
 
         //! namelen
         int namelen = token_script[byteoffset];
-        if (namelen < TOKENNAME_MINLEN || namelen > TOKENNAME_MAXLEN) throw std::exception();
+        if (namelen < TOKENNAME_MINLEN || namelen > TOKENNAME_MAXLEN)
+            throw std::exception();
         byteoffset += 1;
         if (debug)
             LogPrint(BCLog::TOKEN, "namelen ok (%d)\n", namelen);

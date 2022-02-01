@@ -8,8 +8,8 @@
 #include <amount.h>
 #include <key_io.h>
 #include <logging.h>
-#include <serialize.h>
 #include <script/script.h>
+#include <serialize.h>
 #include <token/token.h>
 #include <utilstrencodings.h>
 #include <wallet/wallet.h>
