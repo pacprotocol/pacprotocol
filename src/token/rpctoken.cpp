@@ -157,13 +157,8 @@ UniValue tokenmint(const JSONRPCRequest& request)
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
-    CWalletTx wtx(pwallet, tx);
-    if (!wtx.RelayWalletTransaction(g_connman.get())) {
-        LogPrintf("RelayWalletTransaction(): Error during transaction broadcast!");
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
 
-    return wtx.GetHash().ToString();
+    return tx->GetHash().ToString();
 }
 
 UniValue tokenbalance(const JSONRPCRequest& request)
