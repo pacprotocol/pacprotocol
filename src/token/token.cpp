@@ -4,10 +4,6 @@
 
 #include <token/token.h>
 
-//! forward declaration from token/util.cpp
-opcodetype GetOpcode(int n);
-int GetIntFromOpcode(opcodetype n);
-
 void build_checksum_script(CScript& checksum_script, uint160& checksum_input)
 {
     checksum_script.clear();

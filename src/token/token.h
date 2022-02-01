@@ -10,6 +10,7 @@
 #include <pubkey.h>
 #include <serialize.h>
 #include <script/script.h>
+#include <token/util.h>
 #include <utilstrencodings.h>
 
 class CScript;

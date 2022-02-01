@@ -14,9 +14,10 @@
 #include <utilstrencodings.h>
 #include <wallet/wallet.h>
 
-extern std::vector<CToken> known_issuances;
+class CToken;
 
 const int ISSUANCE_ID_BEGIN = 16;
+extern std::vector<CToken> known_issuances;
 
 void get_next_issuance_id(uint64_t& id);
 bool is_name_in_issuances(std::string& name);
