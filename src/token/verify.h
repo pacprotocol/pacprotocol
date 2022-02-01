@@ -8,7 +8,6 @@
 #include <amount.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
-#include <token/db.h>
 #include <token/token.h>
 #include <token/util.h>
 #include <validation.h>

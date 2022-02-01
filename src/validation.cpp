@@ -1863,9 +1863,6 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
 void static FlushBlockFile(bool fFinalize = false)
 {
-    //! jump in here and save issuancedb
-    SaveDB();
-
     LOCK(cs_LastBlockFile);
 
     CDiskBlockPos posOld(nLastBlockFile, 0);

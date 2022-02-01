@@ -4,7 +4,6 @@
 
 #include <consensus/validation.h>
 #include <rpc/server.h>
-#include <token/db.h>
 #include <token/util.h>
 #include <token/verify.h>
 #include <wallet/wallet.h>
@@ -448,28 +447,6 @@ UniValue tokensend(const JSONRPCRequest& request)
     return wtx.GetHash().ToString();
 }
 
-UniValue tokenrebuild(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 0) {
-        throw std::runtime_error(
-            "tokenrebuild\n"
-            "\nRebuild issuances/token database by rescanning the chain.\n"
-            "\nArguments:\n"
-            "none\n"
-        );
-    }
-
-    {
-        LOCK(cs_main);
-        int last_height = chainActive.Height();
-        const Consensus::Params& params = Params().GetConsensus();
-        tokendb->ResetIssuanceState();
-        RescanBlocksForTokenData(last_height, params);
-    }
-
-    return NullUniValue;
-}
-
 UniValue tokenissuances(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0) {
@@ -734,7 +711,6 @@ static const CRPCCommand commands[] =
     { "token",              "tokenhistory",           &tokenhistory,            {"name" } },
     { "token",              "tokenlist",              &tokenlist,               { } },
     { "token",              "tokensend",              &tokensend,               {"address", "name", "amount" } },
-    { "token",              "tokenrebuild",           &tokenrebuild,            { } },
     { "token",              "tokenissuances",         &tokenissuances,          { } },
     { "token",              "tokenchecksum",          &tokenchecksum,           {"name" } },
     { "token",              "tokeninfo",              &tokeninfo,               {"name" } },

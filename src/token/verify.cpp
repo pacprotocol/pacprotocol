@@ -42,7 +42,6 @@ bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& 
                 uint64_t identifier = token.getId();
                 if (!onlyCheck && (!is_name_in_issuances(name) && !is_identifier_in_issuances(identifier))) {
                     known_issuances.push_back(token);
-                    SaveDB();
                 }
             } else if (token.getType() == CToken::NONE) {
                 return false;

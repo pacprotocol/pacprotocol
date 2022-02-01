@@ -41,7 +41,6 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <token/db.cpp>
 #include <torcontrol.h>
 #include <ui_interface.h>
 #include <util.h>
@@ -2310,7 +2309,6 @@ bool AppInitMain()
 
     // ********************************************************* Step 10d: setup PACGlobal-specific tasks
 
-    LoadDB();
     initBanned();
 
     // ********************************************************* Step 11: import blocks
