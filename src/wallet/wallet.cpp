@@ -2931,9 +2931,6 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
         if (!CheckFinalTx(*pcoin->tx))
             continue;
 
-        if (pcoin->IsTokenType())
-            continue;
-
         if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
             continue;
 
@@ -2954,6 +2951,9 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
             continue;
 
         for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
+            // pass on existing token outputs
+            if (pcoin->tx->vout[i].IsTokenOutput())
+                continue;
             bool found = false;
             if (nCoinType == CoinType::ONLY_FULLY_MIXED) {
                 if (!CCoinJoin::IsDenominatedAmount(pcoin->tx->vout[i].nValue)) continue;
