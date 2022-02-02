@@ -11,10 +11,12 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <token/token.h>
+#include <txmempool.h>
 #include <utilstrencodings.h>
 #include <wallet/wallet.h>
 
 class CToken;
+class CTxMemPool;
 
 const int ISSUANCE_ID_BEGIN = 16;
 extern std::vector<CToken> known_issuances;
@@ -25,6 +27,7 @@ bool is_identifier_in_issuances(uint64_t& identifier);
 bool compare_token_name(std::string& prev_token_name, std::string& token_name);
 bool check_token_name(std::string& tokenName, std::string& errorReason);
 void strip_control_chars(std::string& instr);
+bool is_in_mempool(uint256& txhash);
 opcodetype GetOpcode(int n);
 int GetIntFromOpcode(opcodetype n);
 

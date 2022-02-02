@@ -290,6 +290,10 @@ UniValue tokenlist(const JSONRPCRequest& request)
 
             const CWalletTx& wtx = it.second;
 
+            uint256 wtx_hash = wtx.GetHash();
+            if (is_in_mempool(wtx_hash))
+                continue;
+
             if (wtx.IsCoinBase())
                 continue;
 

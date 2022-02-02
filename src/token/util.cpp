@@ -4,6 +4,7 @@
 
 #include <token/util.h>
 
+extern CTxMemPool mempool;
 std::vector<CToken> known_issuances;
 
 void get_next_issuance_id(uint64_t& id)
@@ -74,6 +75,14 @@ void strip_control_chars(std::string& instr)
         }
     }
     instr = outstr;
+}
+
+bool is_in_mempool(uint256& txhash) {
+    LOCK(mempool.cs);
+    if (mempool.exists(txhash)) {
+        return true;
+    }
+    return false;
 }
 
 opcodetype GetOpcode(int n)
