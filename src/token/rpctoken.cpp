@@ -109,9 +109,14 @@ UniValue tokenmint(const JSONRPCRequest& request)
     }
 
     // Checksum
+    std::string strChecksum;
     bool usingChecksum = true;
-    std::string strChecksum = request.params[3].get_str();
-    if (strChecksum.size() != 40 || !IsHex(strChecksum) || strChecksum.empty()) {
+    if (request.params.size() == 4) {
+        strChecksum = request.params[3].get_str();
+        if (strChecksum.size() != 40 || !IsHex(strChecksum)) {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid checksum string specified");
+        }
+    } else {
         usingChecksum = false;
     }
 
