@@ -196,6 +196,8 @@ UniValue tokenbalance(const JSONRPCRequest& request)
 
     LOCK(pwallet->cs_wallet);
 
+    std::map<std::string, CAmount> token_balances;
+
     // Iterate wallet txes
     UniValue result(UniValue::VOBJ);
     {
@@ -234,24 +236,18 @@ UniValue tokenbalance(const JSONRPCRequest& request)
 
                     //! create and fill entry
                     std::string name = token.getName();
-
-                    UniValue entry(UniValue::VOBJ);
-                    entry.pushKV("identifier", strprintf("%016x", token.getId()));
-                    entry.pushKV("address", EncodeDestination(address));
-                    entry.pushKV("amount", nValue);
-
-                    UniValue outpoint(UniValue::VOBJ);
-                    outpoint.pushKV(wtx.tx->GetHash().ToString(), n);
-                    entry.pushKV("outpoint", outpoint);
-
-                    if (!use_filter) {
-                        result.pushKV(token.getName(), entry);
-                    } else if (use_filter && compare_token_name(filter_name, name)) {
-                        result.pushKV(token.getName(), entry);
-                    }
+                    token_balances[name] += nValue;
                 }
                 ++n;
             }
+        }
+    }
+
+    for (const auto& l : token_balances) {
+        if (!use_filter) {
+            result.pushKV(l.first, l.second);
+        } else if (use_filter && compare_token_name(filter_name, REF(l.first))) {
+            result.pushKV(l.first, l.second);
         }
     }
 
