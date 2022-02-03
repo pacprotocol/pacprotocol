@@ -265,7 +265,7 @@ UniValue tokenlist(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 0)
         throw std::runtime_error(
-            "tokenlist \"name\"\n"
+            "tokenlist\n"
             "\nList all token transactions in wallet.\n"
             "\nArguments:\n"
             "\nNone.\n");
