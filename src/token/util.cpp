@@ -85,6 +85,11 @@ bool is_in_mempool(uint256& txhash) {
     return false;
 }
 
+void remove_from_mempool(CTransaction& tx) {
+    LOCK(mempool.cs);
+    mempool.removeRecursive(tx, MemPoolRemovalReason::CONFLICT);
+}
+
 opcodetype GetOpcode(int n)
 {
     opcodetype ret = OP_0;

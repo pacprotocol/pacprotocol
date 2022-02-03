@@ -116,6 +116,11 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
             if (token.getType() == CToken::ISSUANCE) {
                 if (!CheckTokenIssuance(tx, onlyCheck, strError)) {
                     strError = "token-already-issued";
+                    //! if this made its way into mempool, remove it
+                    if (is_in_mempool(hash)) {
+                        CTransaction toBeRemoved(*tx);
+                        remove_from_mempool(toBeRemoved);
+                    }
                     return false;
                 }
             }
