@@ -7,6 +7,7 @@
 #include <token/util.h>
 #include <txmempool.h>
 #include <wallet/wallet.h>
+#include <validation.h>
 
 extern CTxMemPool mempool;
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
@@ -18,9 +19,13 @@ bool CWallet::AvailableToken(std::string& tokenname, uint64_t& tokenid, CAmount&
         if (wtx.IsCoinBase()) {
             continue;
         }
-
         int n = 0;
+        uint256 tx_hash = wtx.tx->GetHash();
         for (const auto& out : wtx.tx->vout) {
+            COutPoint wtx_out(tx_hash, n);
+            if (!is_output_unspent(wtx_out)) {
+                continue;
+            }
             CAmount nValue = out.nValue;
             CScript pk = out.scriptPubKey;
             if (pk.IsPayToToken()) {
@@ -33,8 +38,8 @@ bool CWallet::AvailableToken(std::string& tokenname, uint64_t& tokenid, CAmount&
                     if (nValue >= amountmin) {
                         tokenid = token.getId();
                         amountout = nValue;
-                        ret = CTxIn(COutPoint(wtx.tx->GetHash(), n));
-                        LogPrint(BCLog::TOKEN, "%s - returning COutPoint(%s, %d) containing %d %s\n", __func__, wtx.tx->GetHash().ToString(), n, nValue, token.getName());
+                        ret = CTxIn(COutPoint(tx_hash, n));
+                        LogPrint(BCLog::TOKEN, "%s - returning COutPoint(%s, %d) containing %d %s\n", __func__, tx_hash.ToString(), n, nValue, token.getName());
                         return true;
                     }
                 }

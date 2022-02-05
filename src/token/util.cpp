@@ -90,6 +90,15 @@ void remove_from_mempool(CTransaction& tx) {
     mempool.removeRecursive(tx, MemPoolRemovalReason::CONFLICT);
 }
 
+bool is_output_unspent(const COutPoint& out)
+{
+    Coin coin;
+    if (!GetUTXOCoin(out, coin)) {
+        return false;
+    }
+    return true;
+}
+
 opcodetype GetOpcode(int n)
 {
     opcodetype ret = OP_0;

@@ -14,6 +14,7 @@
 #include <txmempool.h>
 #include <utilstrencodings.h>
 #include <wallet/wallet.h>
+#include <validation.h>
 
 class CToken;
 class CTxMemPool;
@@ -29,6 +30,7 @@ bool check_token_name(std::string& tokenName, std::string& errorReason);
 void strip_control_chars(std::string& instr);
 bool is_in_mempool(uint256& txhash);
 void remove_from_mempool(CTransaction& tx);
+bool is_output_unspent(const COutPoint& out);
 opcodetype GetOpcode(int n);
 int GetIntFromOpcode(opcodetype n);
 
