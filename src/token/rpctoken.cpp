@@ -156,8 +156,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
     }
     CValidationState state;
     if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, std::string("\"\""), reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error transaction rejected (%s)", FormatStateMessage(state)));
     }
 
     return tx->GetHash().ToString();
@@ -207,6 +206,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
             const CWalletTx& wtx = it.second;
             if (wtx.IsCoinBase())
                 continue;
+
             for (const auto& out : wtx.tx->vout) {
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
@@ -429,14 +429,13 @@ UniValue tokensend(const JSONRPCRequest& request)
     // Sign transaction
     std::string strError;
     if (!pwallet->SignTokenTransaction(tx, strError)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Issue signing token transaction");
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error signing token transaction (%s)", strError));
     }
 
     // Broadcast transaction
     CWalletTx wtx(pwallet, MakeTransactionRef(tx));
     if (!wtx.RelayWalletTransaction(g_connman.get())) {
-        LogPrintf("RelayWalletTransaction(): Error during transaction broadcast!");
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error broadcasting token transaction");
     }
 
     return wtx.GetHash().ToString();
