@@ -413,18 +413,20 @@ UniValue tokensend(const JSONRPCRequest& request)
     }
     CKeyID keyID = newKey.GetID();
 
-    // Generate target change 'out'
-    CScript destChangePubKey;
-    CScript destChangeScript = GetScriptForDestination(keyID);
-    build_token_script(destChangePubKey, CToken::CURRENT_VERSION, CToken::TRANSFER, id, strToken, destChangeScript);
-    CTxOut destChangeOutput(valueOut - nAmount, destChangePubKey);
-
     // Create transaction
     CMutableTransaction tx;
     tx.nLockTime = chainActive.Height();
     tx.vin.push_back(ret_input);
     tx.vout.push_back(destOutput);
-    tx.vout.push_back(destChangeOutput);
+
+    // Generate target change 'out'
+    if (valueOut - nAmount > 0) {
+        CScript destChangePubKey;
+        CScript destChangeScript = GetScriptForDestination(keyID);
+        build_token_script(destChangePubKey, CToken::CURRENT_VERSION, CToken::TRANSFER, id, strToken, destChangeScript);
+        CTxOut destChangeOutput(valueOut - nAmount, destChangePubKey);
+        tx.vout.push_back(destChangeOutput);
+    }
 
     // Sign transaction
     std::string strError;
