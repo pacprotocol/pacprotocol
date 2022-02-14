@@ -159,6 +159,11 @@ UniValue tokenmint(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error transaction rejected (%s)", FormatStateMessage(state)));
     }
 
+    // Keep our change key
+    if (nChangePosRet != -1) {
+        reservekey.KeepKey();
+    }
+
     return tx->GetHash().ToString();
 }
 
