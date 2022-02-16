@@ -200,7 +200,8 @@ UniValue tokenbalance(const JSONRPCRequest& request)
 
     LOCK(pwallet->cs_wallet);
 
-    std::map<std::string, CAmount> token_balances;
+    std::map<std::string, CAmount> token_balances_confirmed;
+    std::map<std::string, CAmount> token_balances_unconfirmed;
 
     // Iterate wallet txes
     UniValue result(UniValue::VOBJ);
@@ -212,13 +213,20 @@ UniValue tokenbalance(const JSONRPCRequest& request)
             if (wtx.IsCoinBase())
                 continue;
 
+            uint256 tx_hash = wtx.tx->GetHash();
+
             for (const auto& out : wtx.tx->vout) {
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
 
-                //! only show entries with sufficient confirms
+                //! account for token in mempool, but not stale wallet sends
+                bool in_mempool = false;
                 if (wtx.GetDepthInMainChain() == 0) {
-                    continue;
+                    if (is_in_mempool(tx_hash)) {
+                        in_mempool = true;
+                    } else {
+                        continue;
+                    }
                 }
 
                 //! wallet may show existing spent entries
@@ -241,20 +249,35 @@ UniValue tokenbalance(const JSONRPCRequest& request)
 
                     //! create and fill entry
                     std::string name = token.getName();
-                    token_balances[name] += nValue;
+                    if (!in_mempool)
+                        token_balances_confirmed[name] += nValue;
+                    else
+                        token_balances_unconfirmed[name] += nValue;
                 }
                 ++n;
             }
         }
     }
 
-    for (const auto& l : token_balances) {
+    UniValue confirmed(UniValue::VOBJ);
+    for (const auto& l : token_balances_confirmed) {
         if (!use_filter) {
-            result.pushKV(l.first, l.second);
+            confirmed.pushKV(l.first, l.second);
         } else if (use_filter && compare_token_name(filter_name, REF(l.first))) {
-            result.pushKV(l.first, l.second);
+            confirmed.pushKV(l.first, l.second);
         }
     }
+    result.pushKV("confirmed", confirmed);
+
+    UniValue unconfirmed(UniValue::VOBJ);
+    for (const auto& l : token_balances_unconfirmed) {
+        if (!use_filter) {
+            unconfirmed.pushKV(l.first, l.second);
+        } else if (use_filter && compare_token_name(filter_name, REF(l.first))) {
+            unconfirmed.pushKV(l.first, l.second);
+        }
+    }
+    result.pushKV("unconfirmed", unconfirmed);
 
     return result;
 }
