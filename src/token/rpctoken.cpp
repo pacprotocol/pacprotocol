@@ -350,7 +350,11 @@ UniValue tokenlist(const JSONRPCRequest& request)
                     entry.pushKV("address", EncodeDestination(address));
                     entry.pushKV("category", wtx_type ? "send" : "receive");
                     entry.pushKV("amount", nValue);
-                    entry.pushKV("confirmations", height - mapBlockIndex[wtx.hashBlock]->nHeight);
+                    if (!mapBlockIndex[wtx.hashBlock]) {
+                        entry.pushKV("confirmations", -1);
+                    } else {
+                        entry.pushKV("confirmations", height - mapBlockIndex[wtx.hashBlock]->nHeight);
+                    }
                     entry.pushKV("time", wtx.GetTxTime());
                     entry.pushKV("block", wtx.hashBlock.ToString());
                     UniValue outpoint(UniValue::VOBJ);
