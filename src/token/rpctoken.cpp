@@ -219,6 +219,11 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
 
+                //! wallet may show existing spent entries
+                if (pwallet->IsSpent(wtx.tx->GetHash(), n++)) {
+                    continue;
+                }
+
                 //! account for token in mempool, but not stale wallet sends
                 bool in_mempool = false;
                 if (wtx.GetDepthInMainChain() == 0) {
@@ -227,11 +232,6 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                     } else {
                         continue;
                     }
-                }
-
-                //! wallet may show existing spent entries
-                if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
-                    continue;
                 }
 
                 if (pk.IsPayToToken()) {
@@ -254,7 +254,6 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                     else
                         token_balances_unconfirmed[name] += nValue;
                 }
-                ++n;
             }
         }
     }
