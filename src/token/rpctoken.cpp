@@ -208,7 +208,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
     {
         LOCK(pwallet->cs_wallet);
         for (auto it : pwallet->mapWallet) {
-            int n = 0;
+
             const CWalletTx& wtx = it.second;
             if (wtx.IsCoinBase())
                 continue;
@@ -219,6 +219,11 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                 CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
+
+                //! covers conflicted wtx's
+                if (!wtx.IsTrusted()) {
+                    continue;
+                }
 
                 //! wallet may show existing spent entries
                 if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
