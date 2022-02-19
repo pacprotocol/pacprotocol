@@ -725,6 +725,86 @@ UniValue tokeninfo(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue tokenunspent(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "tokenunspent\n"
+            "\nList all unspent token outputs.\n");
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK(pwallet->cs_wallet);
+
+    // Iterate wallet txes
+    UniValue result(UniValue::VARR);
+    {
+        LOCK(pwallet->cs_wallet);
+        for (auto it : pwallet->mapWallet)
+        {
+            const CWalletTx& wtx = it.second;
+            if (wtx.IsCoinBase())
+                continue;
+
+            if (!mapBlockIndex[wtx.hashBlock])
+                continue;
+
+            if (!wtx.IsTrusted())
+                continue;
+
+            uint256 tx_hash = wtx.tx->GetHash();
+            for (int n = 0; n < wtx.tx->vout.size(); n++)
+            {
+                CTxOut out = wtx.tx->vout[n];
+                CScript pk = out.scriptPubKey;
+                CAmount nValue = out.nValue;
+
+                //! wallet may show existing spent entries
+                if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
+                    continue;
+                }
+
+                if (pk.IsPayToToken())
+                {
+                    CToken token;
+                    if (!build_token_from_script(pk, token)) {
+                        continue;
+                    }
+
+                    CTxDestination address;
+                    ExtractDestination(pk, address);
+
+                    //! make sure we only display items 'to' us
+                    if (!IsMine(*pwallet, address)) {
+                        continue;
+                    }
+
+                    //! create and fill entry
+                    UniValue entry(UniValue::VOBJ);
+                    if (nValue > 0) {
+                        entry.pushKV ("token", token.getName());
+                        entry.pushKV ("data", HexStr(pk));
+                        entry.pushKV ("amount", nValue);
+                        result.push_back(entry);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)
   //  --------------------- ------------------------  -----------------------
@@ -737,6 +817,7 @@ static const CRPCCommand commands[] =
     { "token",              "tokenissuances",         &tokenissuances,          { } },
     { "token",              "tokenchecksum",          &tokenchecksum,           {"name" } },
     { "token",              "tokeninfo",              &tokeninfo,               {"name" } },
+    { "token",              "tokenunspent",           &tokenunspent,            { } },
 };
 
 void RegisterTokenRPCCommands(CRPCTable& tableRPC)
