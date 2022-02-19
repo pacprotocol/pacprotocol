@@ -214,13 +214,14 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                 continue;
 
             uint256 tx_hash = wtx.tx->GetHash();
-
-            for (const auto& out : wtx.tx->vout) {
+            for (int n = 0; n < wtx.tx->vout.size(); n++)
+            {
+                CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
 
                 //! wallet may show existing spent entries
-                if (pwallet->IsSpent(wtx.tx->GetHash(), n++)) {
+                if (pwallet->IsSpent(wtx.tx->GetHash(), n)) {
                     continue;
                 }
 
@@ -320,9 +321,9 @@ UniValue tokenlist(const JSONRPCRequest& request)
             if (wtx.IsCoinBase())
                 continue;
 
-            int n = 0;
-            for (const auto& out : wtx.tx->vout) {
-
+            for (int n = 0; n < wtx.tx->vout.size(); n++)
+            {
+                CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
 
@@ -362,7 +363,6 @@ UniValue tokenlist(const JSONRPCRequest& request)
 
                     result.push_back(entry);
                 }
-                ++n;
             }
         }
     }
