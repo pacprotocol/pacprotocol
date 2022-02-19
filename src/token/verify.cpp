@@ -162,7 +162,7 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
 
                 //! extract prevtoken data from the output
                 CToken prevToken;
-                CScript prevTokenData = inputPrev->vout[n].scriptPubKey;
+                CScript prevTokenData = inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey;
                 if (!ContextualCheckToken(prevTokenData, prevToken, strError)) {
                     strError = "token-prevtoken-isinvalid";
                     return false;
