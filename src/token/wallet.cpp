@@ -12,39 +12,42 @@
 extern CTxMemPool mempool;
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
-bool CWallet::AvailableToken(std::string& tokenname, uint64_t& tokenid, CAmount& amountmin, CAmount& amountout, CTxIn& ret)
+bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
 {
-    for (auto it : mapWallet) {
+    amountFound = 0;
+    for (auto it : mapWallet)
+    {
         const CWalletTx& wtx = it.second;
         if (wtx.IsCoinBase()) {
             continue;
         }
-        int n = 0;
         uint256 tx_hash = wtx.tx->GetHash();
-        for (const auto& out : wtx.tx->vout) {
+        for (int n = 0; n < wtx.tx->vout.size(); n++)
+        {
+            CTxOut out = wtx.tx->vout[n];
             COutPoint wtx_out(tx_hash, n);
+            if (is_in_mempool(tx_hash)) {
+                continue;
+            }
             if (!is_output_unspent(wtx_out)) {
                 continue;
             }
-            CAmount nValue = out.nValue;
             CScript pk = out.scriptPubKey;
+            CAmount inputValue = out.nValue;
             if (pk.IsPayToToken()) {
                 CToken token;
                 if (!build_token_from_script(pk, token)) {
                     continue;
                 }
                 if (tokenname == token.getName()) {
-                    //! we could opt to use the smallest output found, but once we're rolling..
-                    if (nValue >= amountmin) {
-                        tokenid = token.getId();
-                        amountout = nValue;
-                        ret = CTxIn(COutPoint(tx_hash, n));
-                        LogPrint(BCLog::TOKEN, "%s - returning COutPoint(%s, %d) containing %d %s\n", __func__, tx_hash.ToString(), n, nValue, token.getName());
+                    amountFound += inputValue;
+                    CTxIn inputFound(COutPoint(tx_hash, n));
+                    ret.push_back(inputFound);
+                    if (amountFound >= amountMin) {
                         return true;
                     }
                 }
             }
-            n++;
         }
     }
     return false;

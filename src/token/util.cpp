@@ -44,6 +44,17 @@ bool compare_token_name(std::string& prev_token_name, std::string& token_name)
     return (prev_token_name.compare(token_name) == 0);
 }
 
+bool get_id_for_token_name(std::string& name, uint64_t& id)
+{
+    for (CToken& token : known_issuances) {
+        if (name == token.getName()) {
+            id = token.getId();
+            return true;
+        }
+    }
+    return false;
+}
+
 bool check_token_name(std::string& tokenName, std::string& errorReason)
 {
     if (tokenName.length() < TOKENNAME_MINLEN || tokenName.length() > TOKENNAME_MAXLEN) {

@@ -424,16 +424,19 @@ UniValue tokensend(const JSONRPCRequest& request)
     }
 
     // Extract token/balances from wallet
-    uint64_t id;
-    CTxIn ret_input;
     CAmount valueOut;
-    if (!pwallet->AvailableToken(strToken, id, nAmount, valueOut, ret_input)) {
+    std::vector<CTxIn> ret_input;
+    if (!pwallet->FundTokenTransaction(strToken, nAmount, valueOut, ret_input)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Could not find enough token to create transaction.");
     }
 
     // Generate target destination 'out'
     CScript destPubKey;
     CScript destScript = GetScriptForDestination(dest);
+    uint64_t id;
+    if (!get_id_for_token_name(strToken, id)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Could not find token id from returned token inputs.");
+    }
     build_token_script(destPubKey, CToken::CURRENT_VERSION, CToken::TRANSFER, id, strToken, destScript);
     CTxOut destOutput(nAmount, destPubKey);
 
@@ -447,7 +450,7 @@ UniValue tokensend(const JSONRPCRequest& request)
     // Create transaction
     CMutableTransaction tx;
     tx.nLockTime = chainActive.Height();
-    tx.vin.push_back(ret_input);
+    tx.vin = ret_input;
     tx.vout.push_back(destOutput);
 
     // Generate target change 'out'
