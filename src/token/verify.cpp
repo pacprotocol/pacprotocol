@@ -230,3 +230,36 @@ bool FindLastTokenUse(std::string& name, COutPoint& token_spend, int lastHeight,
 
     return false;
 }
+
+void UndoTokenIssuance(uint64_t& id, std::string& name)
+{
+    LOCK(cs_main);
+    if (is_identifier_in_issuances(id) && is_name_in_issuances(name)) {
+        for (unsigned int index = 0; index < known_issuances.size(); index++) {
+            uint64_t stored_id = known_issuances.at(index).getId();
+            std::string stored_name = known_issuances.at(index).getName();
+            if (stored_id == id && stored_name == name) {
+                known_issuances.erase(known_issuances.begin()+index);
+                return;
+            }
+        }
+    }
+}
+
+void UndoTokenIssuancesInBlock(const CBlock& block)
+{
+    for (unsigned int i = 0; i < block.vtx.size(); i++) {
+        const CTransactionRef& tx = block.vtx[i];
+        for (unsigned int j = 0; j < tx->vout.size(); j++) {
+            CScript tokenData = tx->vout[j].scriptPubKey;
+            if (tokenData.IsPayToToken()) {
+                CToken token;
+                if (token.isIssuance()) {
+                    uint64_t id = token.getId();
+                    std::string name = token.getName();
+                    UndoTokenIssuance(id, name);
+                }
+            }
+        }
+    }
+}
