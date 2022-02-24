@@ -88,6 +88,10 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
         if (tx->vout[i].scriptPubKey.IsPayToToken()) {
             CToken token;
             CScript tokenData = tx->vout[i].scriptPubKey;
+            if (!ContextualCheckToken(tokenData, token, strError)) {
+                strError = "token-isinvalid";
+                return false;
+            }
             if (token.isIssuance()) {
                 ++issuance_total;
             }
