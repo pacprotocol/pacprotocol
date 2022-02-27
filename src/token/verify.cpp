@@ -15,6 +15,48 @@ bool are_tokens_active(int height)
     return chainActive.Height() >= params.nTokenHeight;
 }
 
+bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::string& strError)
+{
+    LOCK(mempool.cs);
+
+    //! build quick vin/vout cache
+    std::vector<COutPoint> mempool_outputs;
+    for (const auto& l : pool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vin.size(); i++) {
+                mempool_outputs.push_back(mtx.vin[i].prevout);
+            }
+            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
+                COutPoint tempEntry(mtx.GetHash(), i);
+                mempool_outputs.push_back(tempEntry);
+            }
+        }
+    }
+
+    //! then see if any exist in tx vin
+    for (unsigned int i = 0; i < tokenTx->vin.size(); i++) {
+        const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), tokenTx->vin[i].prevout);
+        if (it != mempool_outputs.end()) {
+            strError = "vin-already-used-in-mempool-tx";
+            return false;
+        }
+    }
+
+    //! then see if any exist in tx vout
+    const uint256& tx_hash = tokenTx->GetHash();
+    for (unsigned int i = 0; i < tokenTx->vout.size(); i++) {
+        COutPoint tempEntry(tx_hash, i);
+        const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), tempEntry);
+        if (it != mempool_outputs.end()) {
+            strError = "vout-already-used-in-mempool-tx";
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& strError)
 {
     uint256 hash = tx->GetHash();

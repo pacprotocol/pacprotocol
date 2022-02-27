@@ -684,6 +684,20 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.Invalid(false, REJECT_DUPLICATE, "txn-already-in-mempool");
     }
 
+    // token specific checks
+    if (ptx->HasTokenOutput()) {
+        if (!are_tokens_active()) {
+            return error("%s: CheckToken: token layer is not currently active", __func__);
+        }
+        std::string strError;
+        if (!CheckToken(ptx, true, strError, chainparams.GetConsensus())) {
+            return error("%s: CheckToken: %s", __func__, strError);
+        }
+        if (!CheckTokenMempool(pool, ptx, strError)) {
+            return error("%s: CheckTokenMempool: %s", __func__, strError);
+        }
+    }
+
     llmq::CInstantSendLockPtr conflictLock = llmq::quorumInstantSendManager->GetConflictingLock(tx);
     if (conflictLock) {
         CTransactionRef txConflict;
@@ -893,16 +907,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             LimitMempoolSize(pool, gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000, gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
             if (!pool.exists(hash))
                 return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool full");
-        }
-    }
-
-    if (ptx->HasTokenOutput()) {
-        if (!are_tokens_active()) {
-            return error("%s: CheckToken: token layer is not currently active", __func__);
-        }
-        std::string tokenError;
-        if (!CheckToken(ptx, true, tokenError, chainparams.GetConsensus())) {
-            return error("%s: CheckToken: %s", __func__, tokenError);
         }
     }
 
