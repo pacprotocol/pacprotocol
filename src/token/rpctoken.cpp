@@ -213,6 +213,11 @@ UniValue tokenbalance(const JSONRPCRequest& request)
             if (wtx.IsCoinBase())
                 continue;
 
+            //! covers conflicted wtx's
+            if (!wtx.IsTrusted()) {
+                continue;
+            }
+
             uint256 tx_hash = wtx.tx->GetHash();
             for (int n = 0; n < wtx.tx->vout.size(); n++)
             {
@@ -220,8 +225,8 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
 
-                //! covers conflicted wtx's
-                if (!wtx.IsTrusted()) {
+                //! dont count checksum output value
+                if (pk.IsChecksumData()) {
                     continue;
                 }
 

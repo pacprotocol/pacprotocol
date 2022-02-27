@@ -34,6 +34,10 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
             }
             CScript pk = out.scriptPubKey;
             CAmount inputValue = out.nValue;
+            //! dont count checksum output value
+            if (pk.IsChecksumData()) {
+                continue;
+            }
             if (pk.IsPayToToken()) {
                 CToken token;
                 if (!build_token_from_script(pk, token)) {
