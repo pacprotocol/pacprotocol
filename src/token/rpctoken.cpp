@@ -142,7 +142,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = { issuance_script, usingChecksum ? nAmount + 1000 : nAmount, false };
+    CRecipient recipient = { issuance_script, nAmount, false };
     vecSend.push_back(recipient);
     if (usingChecksum) {
         CRecipient checksum_recipient = { checksum_script, 1000, false };
