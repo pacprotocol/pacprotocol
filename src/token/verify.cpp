@@ -19,6 +19,52 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
 {
     LOCK(mempool.cs);
 
+    // we are checking to see if any known token vouts are being used simultaneously in mempool, and additionally if
+    // any duplicate issuance token names exist (before they get committed to known_issuances via connectblock)
+
+    //! build issuance name list from mempool
+    std::vector<std::string> mempool_names;
+    for (const auto& l : pool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
+                if (mtx.vout[i].scriptPubKey.IsPayToToken()) {
+                    CToken token;
+                    CScript token_script = mtx.vout[i].scriptPubKey;
+                    if (!ContextualCheckToken(token_script, token, strError)) {
+                        strError = "corrupt-invalid-existing-mempool";
+                        return false;
+                    }
+                    std::string name = token.getName();
+                    if (token.getType() == CToken::ISSUANCE) {
+                        if (std::find(mempool_names.begin(), mempool_names.end(), name) == mempool_names.end()) {
+                            mempool_names.push_back(name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //! check if our new issuance already exists in this pool
+    for (unsigned int i = 0; i < tokenTx->vout.size(); i++) {
+        CToken token;
+        if (tokenTx->vout[i].scriptPubKey.IsPayToToken()) {
+            CScript token_script = tokenTx->vout[i].scriptPubKey;
+            if (!ContextualCheckToken(token_script, token, strError)) {
+                strError = "corrupt-invalid-tokentx-mempool";
+                return false;
+            }
+            std::string name = token.getName();
+            if (token.getType() == CToken::ISSUANCE) {
+                if (std::find(mempool_names.begin(), mempool_names.end(), name) != mempool_names.end()) {
+                    strError = "token-issuance-exists-mempool";
+                    return false;
+                }
+            }
+        }
+    }
+
     //! build quick vin/vout cache
     std::vector<COutPoint> mempool_outputs;
     for (const auto& l : pool.mapTx) {
