@@ -68,6 +68,12 @@ bool check_token_name(std::string& tokenName, std::string& errorReason)
         return false;
     }
 
+    std::string casedName = boost::algorithm::to_upper_copy(boost::algorithm::to_lower_copy(tokenName));
+    if (tokenName != casedName) {
+        errorReason = "tokenname-not-upper";
+        return false;
+    }
+
     if (cleanedName.compare(tokenName) != 0) {
         errorReason = "tokenname-payload-inconsistent";
         return false;

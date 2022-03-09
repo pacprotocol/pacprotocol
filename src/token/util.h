@@ -16,6 +16,8 @@
 #include <wallet/wallet.h>
 #include <validation.h>
 
+#include <boost/algorithm/string.hpp>
+
 class CToken;
 class CTxMemPool;
 
