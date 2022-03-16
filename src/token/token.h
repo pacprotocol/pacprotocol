@@ -17,6 +17,7 @@ class CScript;
 class CPubKey;
 
 //! const for token parameters
+const int TOKEN_MINCONFS = 1;
 const int TOKENNAME_MINLEN = 3;
 const int TOKENNAME_MAXLEN = 12;
 const CAmount TOKEN_VALUEMAX = std::numeric_limits<int>::max();

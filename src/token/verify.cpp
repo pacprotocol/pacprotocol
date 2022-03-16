@@ -22,6 +22,11 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     // we are checking to see if any known token vouts are being used simultaneously in mempool, and additionally if
     // any duplicate issuance token names exist (before they get committed to known_issuances via connectblock)
 
+    //! check inputs have sufficient confirms
+    if (!CheckTokenInputs(tokenTx, strError)) {
+        return false;
+    }
+
     //! build issuance name list from mempool
     std::vector<std::string> mempool_names;
     for (const auto& l : pool.mapTx) {
@@ -166,9 +171,32 @@ bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& str
     return true;
 }
 
+bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError)
+{
+    if (!tx->HasTokenOutput()) {
+        return true;
+    }
+
+    for (unsigned int i = 0; i < tx->vin.size(); i++) {
+         COutPoint prevout = tx->vin[i].prevout;
+         int confirmations = GetUTXOConfirmations(prevout);
+         if (confirmations < TOKEN_MINCONFS) {
+             strError = "token-vin-insufficient-confirms";
+             return false;
+         }
+    }
+
+    return true;
+}
+
 bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError, const Consensus::Params& params)
 {
     uint256 hash = tx->GetHash();
+
+    //! check inputs have sufficient confirms
+    if (!CheckTokenInputs(tx, strError)) {
+        return false;
+    }
 
     //! ensure only one issuance per tx
     int issuance_total = 0;
