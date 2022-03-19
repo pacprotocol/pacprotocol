@@ -2093,6 +2093,12 @@ bool AppInitMain()
                     break;
                 }
 
+                // Right after blockindex has loaded, time to rescan for token metadata
+                if (!BlockUntilTokenMetadataSynced()) {
+                    strLoadError = _("Inconsistency with token state");
+                    break;
+                }
+
                 if (!is_coinsview_empty) {
                     uiInterface.InitMessage(_("Verifying blocks..."));
                     if (fHavePruned && gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS) > MIN_BLOCKS_TO_KEEP) {
@@ -2155,9 +2161,6 @@ bool AppInitMain()
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
     }
-
-    // Right after blockindex has loaded, time to rescan for token metadata
-    BlockUntilTokenMetadataSynced();
 
     fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
     CAutoFile est_filein(fsbridge::fopen(est_path, "rb"), SER_DISK, CLIENT_VERSION);

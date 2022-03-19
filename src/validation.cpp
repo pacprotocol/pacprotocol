@@ -690,11 +690,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return error("%s: CheckToken: token layer is not currently active", __func__);
         }
         std::string strError;
-        if (!CheckToken(ptx, true, strError, chainparams.GetConsensus())) {
-            return error("%s: CheckToken: %s", __func__, strError);
-        }
         if (!CheckTokenMempool(pool, ptx, strError)) {
             return error("%s: CheckTokenMempool: %s", __func__, strError);
+        }
+        if (!CheckToken(ptx, true, strError, chainparams.GetConsensus())) {
+            return error("%s: CheckToken: %s", __func__, strError);
         }
     }
 

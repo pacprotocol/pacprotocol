@@ -6,19 +6,25 @@
 
 #define MILLI 0.001
 
-void ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
+bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
 {
-    if (params.nTokenHeight > lastHeight) {
-        return;
+    if (lastHeight < params.nTokenHeight) {
+        LogPrint(BCLog::TOKEN, "%s - loaded chain hasnt entered token phase\n", __func__);
+        return true;
     }
 
-    for (int height = params.nTokenHeight; height < lastHeight; ++height) {
-
+    for (int height = params.nTokenHeight; height < lastHeight; ++height)
+    {
         const CBlockIndex* pindex = chainActive[height];
+        if (!pindex) {
+            LogPrint(BCLog::TOKEN, "%s - error reading blockindex for height %d\n", __func__, height);
+            return false;
+        }
 
         CBlock block;
         if (!ReadBlockFromDisk(block, pindex, params)) {
-            continue;
+            LogPrint(BCLog::TOKEN, "%s - error reading block %d from disk\n", __func__, height);
+            return false;
         }
 
         for (unsigned int i = 0; i < block.vtx.size(); i++) {
@@ -30,14 +36,16 @@ void ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
 
             std::string strError;
             if (!CheckToken(tx, false, strError, params)) {
-                LogPrint(BCLog::TOKEN, "%s - error %s", __func__, strError);
-                continue;
+                LogPrint(BCLog::TOKEN, "%s - error %s (height %d)\n", __func__, strError, height);
+                return false;
             }
         }
     }
+
+    return true;
 }
 
-void BlockUntilTokenMetadataSynced()
+bool BlockUntilTokenMetadataSynced()
 {
     LOCK(cs_main);
 
@@ -45,8 +53,12 @@ void BlockUntilTokenMetadataSynced()
     int currentHeight = chainActive.Height();
 
     int64_t nStart = GetTimeMillis();
-    ScanForTokenMetadata(currentHeight, consensus_params);
+    if (!ScanForTokenMetadata(currentHeight, consensus_params)) {
+        return false;
+    }
     int64_t nEnd = GetTimeMillis();
 
     LogPrint(BCLog::TOKEN, "%s - token index synced in %.2fms\n", __func__, MILLI * (nEnd - nStart));
+
+    return true;
 }

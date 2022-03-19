@@ -9,7 +9,7 @@
 #include <token/verify.h>
 #include <validation.h>
 
-void ScanForTokenMetadata();
-void BlockUntilTokenMetadataSynced();
+bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params);
+bool BlockUntilTokenMetadataSynced();
 
 #endif // PACPROTOCOL_TOKEN_INDEX_H
