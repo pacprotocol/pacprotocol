@@ -2094,7 +2094,7 @@ bool AppInitMain()
                 }
 
                 // Right after blockindex has loaded, time to rescan for token metadata
-                if (!BlockUntilTokenMetadataSynced()) {
+                if (!BlockUntilTokenMetadataSynced(chainparams.GetConsensus())) {
                     strLoadError = _("Inconsistency with token state");
                     break;
                 }

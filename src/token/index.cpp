@@ -27,15 +27,15 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
             return false;
         }
 
-        for (unsigned int i = 0; i < block.vtx.size(); i++) {
-
+        for (unsigned int i = 0; i < block.vtx.size(); i++)
+        {
             const CTransactionRef& tx = block.vtx[i];
             if (!tx->HasTokenOutput()) {
                 continue;
             }
 
             std::string strError;
-            if (!CheckToken(tx, false, strError, params)) {
+            if (!CheckToken(tx, strError, params, false)) {
                 LogPrint(BCLog::TOKEN, "%s - error %s (height %d)\n", __func__, strError, height);
                 return false;
             }
@@ -45,15 +45,14 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
     return true;
 }
 
-bool BlockUntilTokenMetadataSynced()
+bool BlockUntilTokenMetadataSynced(const Consensus::Params& params)
 {
     LOCK(cs_main);
 
-    const auto& consensus_params = Params().GetConsensus();
     int currentHeight = chainActive.Height();
 
     int64_t nStart = GetTimeMillis();
-    if (!ScanForTokenMetadata(currentHeight, consensus_params)) {
+    if (!ScanForTokenMetadata(currentHeight, params)) {
         return false;
     }
     int64_t nEnd = GetTimeMillis();

@@ -14,10 +14,10 @@
 
 bool are_tokens_active(int height = 0);
 bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::string& strError);
-bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& strError);
+bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool onlyCheck);
 bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError);
 bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& strError);
-bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError, const Consensus::Params& params);
+bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensus::Params& params, bool onlyCheck);
 bool FindLastTokenUse(std::string& name, COutPoint& token_spend, int lastHeight, const Consensus::Params& params);
 void UndoTokenIssuance(uint64_t& id, std::string& name);
 void UndoTokenIssuancesInBlock(const CBlock& block);

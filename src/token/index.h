@@ -10,6 +10,6 @@
 #include <validation.h>
 
 bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params);
-bool BlockUntilTokenMetadataSynced();
+bool BlockUntilTokenMetadataSynced(const Consensus::Params& params);
 
 #endif // PACPROTOCOL_TOKEN_INDEX_H

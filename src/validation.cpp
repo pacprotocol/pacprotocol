@@ -693,7 +693,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         if (!CheckTokenMempool(pool, ptx, strError)) {
             return error("%s: CheckTokenMempool: %s", __func__, strError);
         }
-        if (!CheckToken(ptx, true, strError, chainparams.GetConsensus())) {
+        if (!CheckToken(ptx, strError, chainparams.GetConsensus(), true)) {
             return error("%s: CheckToken: %s", __func__, strError);
         }
     }
@@ -2334,9 +2334,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (!are_tokens_active(pindex->nHeight)) {
                 return error("%s: CheckToken: token layer is not currently active", __func__);
             }
-            std::string tokenError;
-            if (!CheckToken(MakeTransactionRef(tx), false, tokenError, chainparams.GetConsensus())) {
-                return error("%s: CheckToken: %s", __func__, tokenError);
+            std::string strError;
+            if (!CheckToken(MakeTransactionRef(tx), strError, chainparams.GetConsensus(), false)) {
+                return error("%s: CheckToken: %s", __func__, strError);
             }
         }
 

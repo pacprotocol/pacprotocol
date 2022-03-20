@@ -108,7 +108,7 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     return true;
 }
 
-bool CheckTokenIssuance(const CTransactionRef& tx, bool onlyCheck, std::string& strError)
+bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool onlyCheck)
 {
     uint256 hash = tx->GetHash();
     for (unsigned int i = 0; i < tx->vout.size(); i++) {
@@ -189,7 +189,7 @@ bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError)
     return true;
 }
 
-bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError, const Consensus::Params& params)
+bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensus::Params& params, bool onlyCheck)
 {
     uint256 hash = tx->GetHash();
 
@@ -234,7 +234,7 @@ bool CheckToken(const CTransactionRef& tx, bool onlyCheck, std::string& strError
 
             //! check if issuance token is unique
             if (token.getType() == CToken::ISSUANCE) {
-                if (!CheckTokenIssuance(tx, onlyCheck, strError)) {
+                if (!CheckTokenIssuance(tx, strError, onlyCheck)) {
                     strError = "token-already-issued";
                     //! if this made its way into mempool, remove it
                     if (is_in_mempool(hash)) {
