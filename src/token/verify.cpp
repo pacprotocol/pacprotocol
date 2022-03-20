@@ -182,6 +182,8 @@ bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError)
          int confirmations = GetUTXOConfirmations(prevout);
          if (confirmations < TOKEN_MINCONFS) {
              strError = "token-vin-insufficient-confirms";
+             LogPrint(BCLog::TOKEN, "%s - COutPoint (%s, %d) has %d confirms, want %d confirm\n",
+                                    __func__, prevout.hash.ToString(), prevout.n, confirmations, TOKEN_MINCONFS);
              return false;
          }
     }
