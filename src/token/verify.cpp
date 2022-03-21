@@ -15,7 +15,7 @@ bool are_tokens_active(int height)
     return chainActive.Height() >= params.nTokenHeight;
 }
 
-bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::string& strError)
+bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string& strError)
 {
     LOCK(mempool.cs);
 
@@ -23,7 +23,9 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     // any duplicate issuance token names exist (before they get committed to known_issuances via connectblock)
 
     //! check inputs have sufficient confirms
-    if (!CheckTokenInputs(tokenTx, strError)) {
+    CCoinsViewCache& view = *pcoinsTip;
+    CBlockIndex* pindex = chainActive.Tip();
+    if (!CheckTokenInputs(tx, pindex, view, strError)) {
         return false;
     }
 
@@ -52,10 +54,10 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     }
 
     //! check if our new issuance already exists in this pool
-    for (unsigned int i = 0; i < tokenTx->vout.size(); i++) {
+    for (unsigned int i = 0; i < tx->vout.size(); i++) {
         CToken token;
-        if (tokenTx->vout[i].scriptPubKey.IsPayToToken()) {
-            CScript token_script = tokenTx->vout[i].scriptPubKey;
+        if (tx->vout[i].scriptPubKey.IsPayToToken()) {
+            CScript token_script = tx->vout[i].scriptPubKey;
             if (!ContextualCheckToken(token_script, token, strError)) {
                 strError = "corrupt-invalid-tokentx-mempool";
                 return false;
@@ -86,8 +88,8 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     }
 
     //! then see if any exist in tx vin
-    for (unsigned int i = 0; i < tokenTx->vin.size(); i++) {
-        const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), tokenTx->vin[i].prevout);
+    for (unsigned int i = 0; i < tx->vin.size(); i++) {
+        const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), tx->vin[i].prevout);
         if (it != mempool_outputs.end()) {
             strError = "vin-already-used-in-mempool-tx";
             return false;
@@ -95,8 +97,8 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::st
     }
 
     //! then see if any exist in tx vout
-    const uint256& tx_hash = tokenTx->GetHash();
-    for (unsigned int i = 0; i < tokenTx->vout.size(); i++) {
+    const uint256& tx_hash = tx->GetHash();
+    for (unsigned int i = 0; i < tx->vout.size(); i++) {
         COutPoint tempEntry(tx_hash, i);
         const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), tempEntry);
         if (it != mempool_outputs.end()) {
@@ -171,19 +173,24 @@ bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& str
     return true;
 }
 
-bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError)
+bool CheckTokenInputs(const CTransactionRef& tx, const CBlockIndex* pindex, const CCoinsViewCache& view, std::string& strError)
 {
     if (!tx->HasTokenOutput()) {
         return true;
     }
 
-    for (unsigned int i = 0; i < tx->vin.size(); i++) {
-         COutPoint prevout = tx->vin[i].prevout;
-         int confirmations = GetUTXOConfirmations(prevout);
+    int spentHeight = pindex->nHeight;
+    for (unsigned int i = 0; i < tx->vin.size(); i++)
+    {
+         const COutPoint &prevout = tx->vin[i].prevout;
+         const Coin& coin = view.AccessCoin(prevout);
+         int confirmations = spentHeight - coin.nHeight;
+
+         LogPrint(BCLog::TOKEN, "%s - COutPoint (%s, %d) has %d confirms, want %d confirm\n",
+                                __func__, prevout.hash.ToString(), prevout.n, confirmations, TOKEN_MINCONFS);
+
          if (confirmations < TOKEN_MINCONFS) {
              strError = "token-vin-insufficient-confirms";
-             LogPrint(BCLog::TOKEN, "%s - COutPoint (%s, %d) has %d confirms, want %d confirm\n",
-                                    __func__, prevout.hash.ToString(), prevout.n, confirmations, TOKEN_MINCONFS);
              return false;
          }
     }
@@ -191,12 +198,12 @@ bool CheckTokenInputs(const CTransactionRef& tx, std::string& strError)
     return true;
 }
 
-bool CheckToken(const CTransactionRef& tx, std::string& strError, const Consensus::Params& params, bool onlyCheck)
+bool CheckToken(const CTransactionRef& tx, const CBlockIndex* pindex, const CCoinsViewCache& view, std::string& strError, const Consensus::Params& params, bool onlyCheck)
 {
     uint256 hash = tx->GetHash();
 
     //! check inputs have sufficient confirms
-    if (!CheckTokenInputs(tx, strError)) {
+    if (!CheckTokenInputs(tx, pindex, view, strError)) {
         return false;
     }
 

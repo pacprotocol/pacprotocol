@@ -27,6 +27,7 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
             return false;
         }
 
+        CCoinsViewCache& view = *pcoinsTip;
         for (unsigned int i = 0; i < block.vtx.size(); i++)
         {
             const CTransactionRef& tx = block.vtx[i];
@@ -35,7 +36,7 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
             }
 
             std::string strError;
-            if (!CheckToken(tx, strError, params, false)) {
+            if (!CheckToken(tx, pindex, view, strError, params, false)) {
                 LogPrint(BCLog::TOKEN, "%s - error %s (height %d)\n", __func__, strError, height);
                 return false;
             }
