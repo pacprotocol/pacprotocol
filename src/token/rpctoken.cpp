@@ -97,8 +97,10 @@ UniValue tokenmint(const JSONRPCRequest& request)
 
     // Name
     std::string strToken = request.params[1].get_str();
+
+    std::string strError;
     strip_control_chars(strToken);
-    if (strToken.size() < TOKENNAME_MINLEN || strToken.size() > TOKENNAME_MAXLEN) {
+    if (!check_token_name(strToken, strError)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid token name");
     }
 
@@ -139,7 +141,6 @@ UniValue tokenmint(const JSONRPCRequest& request)
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
     CAmount nFeeRequired;
-    std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
     CRecipient recipient = { issuance_script, nAmount, false };
