@@ -32,6 +32,9 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
             if (!is_output_unspent(wtx_out)) {
                 continue;
             }
+            if (!IsMine(out)) {
+                continue;
+            }
             CScript pk = out.scriptPubKey;
             CAmount inputValue = out.nValue;
             //! dont count checksum output value
