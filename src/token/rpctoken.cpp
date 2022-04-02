@@ -160,9 +160,9 @@ UniValue tokenmint(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error transaction rejected (%s)", FormatStateMessage(state)));
     }
 
-    // Keep our change key
+    // return change key if not used
     if (nChangePosRet != -1) {
-        reservekey.KeepKey();
+        reservekey.ReturnKey();
     }
 
     return tx->GetHash().ToString();
@@ -452,8 +452,10 @@ UniValue tokensend(const JSONRPCRequest& request)
     CTxOut destOutput(nAmount, destPubKey);
 
     // Generate new change address
+    bool change_was_used = false;
     CPubKey newKey;
-    if (!pwallet->GetKeyFromPool(newKey, false)) {
+    CReserveKey reservekey(pwallet);
+    if (!reservekey.GetReservedKey(newKey, true)) {
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
     }
     CKeyID keyID = newKey.GetID();
@@ -471,6 +473,7 @@ UniValue tokensend(const JSONRPCRequest& request)
         build_token_script(destChangePubKey, CToken::CURRENT_VERSION, CToken::TRANSFER, id, strToken, destChangeScript);
         CTxOut destChangeOutput(valueOut - nAmount, destChangePubKey);
         tx.vout.push_back(destChangeOutput);
+        change_was_used = true;
     }
 
     // Sign transaction
@@ -485,7 +488,12 @@ UniValue tokensend(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error broadcasting token transaction");
     }
 
-    return wtx.GetHash().ToString();
+    // return change key if not used
+    if (!change_was_used) {
+        reservekey.ReturnKey();
+    }
+
+    return tx.GetHash().ToString();
 }
 
 UniValue tokenissuances(const JSONRPCRequest& request)
