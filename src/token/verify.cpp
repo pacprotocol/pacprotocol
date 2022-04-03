@@ -110,6 +110,17 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string&
     return true;
 }
 
+bool IsIdentifierInRange(uint64_t& identifier)
+{
+    uint64_t total_issuances = known_issuances.size();
+    uint64_t test_identifier = identifier - ISSUANCE_ID_BEGIN - 1;
+    LogPrint(BCLog::TOKEN, "%s - expected identifier %016llx, found identifier %016llx\n", __func__, total_issuances, test_identifier);
+    if (total_issuances != test_identifier) {
+        return false;
+    }
+    return true;
+}
+
 bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool onlyCheck)
 {
     uint256 hash = tx->GetHash();
@@ -135,6 +146,10 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool o
                 }
                 std::string name = token.getName();
                 uint64_t identifier = token.getId();
+                if (!onlyCheck && !IsIdentifierInRange(identifier)) {
+                    strError = "token-identifier-out-of-range";
+                    return false;
+                }
                 if (!onlyCheck && (!is_name_in_issuances(name) && !is_identifier_in_issuances(identifier))) {
                     known_issuances.push_back(token);
                 }
