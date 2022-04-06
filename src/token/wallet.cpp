@@ -5,6 +5,7 @@
 #include <policy/policy.h>
 #include <rpc/protocol.h>
 #include <token/util.h>
+#include <token/verify.h>
 #include <txmempool.h>
 #include <wallet/wallet.h>
 #include <validation.h>
@@ -111,6 +112,33 @@ bool CWallet::SignTokenTransaction(CMutableTransaction& rawTx, std::string& strE
         if (!VerifyScript(txin.scriptSig, prevPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&rawTx, i, amount), &serror)) {
             strError = ScriptErrorString(serror);
             return false;
+        }
+    }
+
+    return true;
+}
+
+bool CWallet::GetUnconfirmedTokenBalance(CTxMemPool& pool, std::map<std::string, CAmount>& balances, std::string& strError)
+{
+    LOCK(mempool.cs);
+
+    //! iterate through all txes in mempool
+    for (const auto& l : pool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
+                CScript token_script = mtx.vout[i].scriptPubKey;
+                if (token_script.IsPayToToken() && IsMine(mtx.vout[i])) {
+                    CToken token;
+                    if (!ContextualCheckToken(token_script, token, strError)) {
+                        strError = "corrupt-invalid-existing-mempool";
+                        return false;
+                    }
+                    std::string name = token.getName();
+                    CAmount value = mtx.vout[i].nValue;
+                    balances[name] += value;
+                }
+            }
         }
     }
 

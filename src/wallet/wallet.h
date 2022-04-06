@@ -12,6 +12,7 @@
 #include <saltedhasher.h>
 #include <streams.h>
 #include <tinyformat.h>
+#include <token/util.h>
 #include <ui_interface.h>
 #include <util.h>
 #include <utilstrencodings.h>
@@ -919,6 +920,11 @@ public:
      * sign a token-based transaction
      */
     bool SignTokenTransaction(CMutableTransaction& rawTx, std::string& strError);
+
+    /**
+     * return a vector with unconfirmed wallet token balance
+     */
+    bool GetUnconfirmedTokenBalance(CTxMemPool& pool, std::map<std::string, CAmount>& balances, std::string& strError);
 
     /**
      * Return list of available coins and locked coins grouped by non-change output address.

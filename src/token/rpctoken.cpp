@@ -205,6 +205,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
     std::map<std::string, CAmount> token_balances_unconfirmed;
 
     // Iterate wallet txes
+    std::string strError;
     UniValue result(UniValue::VOBJ);
     {
         LOCK(pwallet->cs_wallet);
@@ -264,7 +265,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
                     if (!in_mempool)
                         token_balances_confirmed[name] += nValue;
                     else
-                        token_balances_unconfirmed[name] += nValue;
+                        pwallet->GetUnconfirmedTokenBalance(mempool, token_balances_unconfirmed, strError);
                 }
             }
         }
