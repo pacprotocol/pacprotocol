@@ -259,7 +259,6 @@ bool CheckToken(const CTransactionRef& tx, const CBlockIndex* pindex, const CCoi
             //! check if issuance token is unique
             if (token.getType() == CToken::ISSUANCE) {
                 if (!CheckTokenIssuance(tx, strError, onlyCheck)) {
-                    strError = "token-already-issued";
                     //! if this made its way into mempool, remove it
                     if (is_in_mempool(hash)) {
                         CTransaction toBeRemoved(*tx);
