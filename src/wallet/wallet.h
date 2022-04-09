@@ -912,6 +912,12 @@ public:
     void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe=true, const CCoinControl *coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
+     * return suitable input via ret for minting token
+     */
+
+    bool FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret);
+
+    /**
      * return suitable inputs via ret for given token name and value
      */
     bool FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret);

@@ -138,34 +138,56 @@ UniValue tokenmint(const JSONRPCRequest& request)
         build_checksum_script(checksum_script, checksum);
     }
 
-    // Create and send the transaction
+    // Extract balances from wallet
+    CAmount valueOut;
+    std::vector<CTxIn> ret_input;
+    CAmount required_funds = nAmount + (usingChecksum ? 1000 : 0);
+    if (!pwallet->FundMintTransaction(required_funds, valueOut, ret_input)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Could not find enough token to create transaction.");
+    }
+
+    // Generate new change address
+    bool change_was_used = (valueOut - required_funds) > 0;
+    CPubKey newKey;
     CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired;
-    std::vector<CRecipient> vecSend;
-    int nChangePosRet = -1;
-    CRecipient recipient = { issuance_script, nAmount, false };
-    vecSend.push_back(recipient);
+    if (!reservekey.GetReservedKey(newKey, true)) {
+        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+    }
+    CKeyID keyID = newKey.GetID();
+
+    // Create transaction
+    CMutableTransaction tx;
+    tx.nLockTime = chainActive.Height();
+    tx.vin = ret_input;
+    tx.vout.push_back(CTxOut(nAmount, issuance_script));
+
     if (usingChecksum) {
-        CRecipient checksum_recipient = { checksum_script, 1000, false };
-        vecSend.push_back(checksum_recipient);
+        tx.vout.push_back(CTxOut(1000, checksum_script));
     }
-    CTransactionRef tx;
-    mapValue_t mapValue;
-    CCoinControl coin_control;
-    if (!pwallet->CreateTransaction(vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+
+    if (change_was_used) {
+        CAmount change_amount = valueOut - required_funds;
+        CScript change_script = GetScriptForDestination(keyID);
+        tx.vout.push_back(CTxOut(change_amount, change_script));
     }
-    CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, std::string("\"\""), reservekey, g_connman.get(), state)) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error transaction rejected (%s)", FormatStateMessage(state)));
+
+    // Sign transaction
+    if (!pwallet->SignTokenTransaction(tx, strError)) {
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error signing token transaction (%s)", strError));
+    }
+
+    // Broadcast transaction
+    CWalletTx wtx(pwallet, MakeTransactionRef(tx));
+    if (!wtx.RelayWalletTransaction(g_connman.get())) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error broadcasting token transaction");
     }
 
     // return change key if not used
-    if (nChangePosRet != -1) {
+    if (!change_was_used) {
         reservekey.ReturnKey();
     }
 
-    return tx->GetHash().ToString();
+    return tx.GetHash().ToString();
 }
 
 UniValue tokenbalance(const JSONRPCRequest& request)
