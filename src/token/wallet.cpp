@@ -16,16 +16,13 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
 {
     amountFound = 0;
-    for (auto it : mapWallet)
+    for (auto out : GetSpendableTXs())
     {
-        const CWalletTx& wtx = it.second;
-        if (wtx.IsCoinBase()) {
-            continue;
-        }
-        uint256 tx_hash = wtx.tx->GetHash();
-        for (int n = 0; n < wtx.tx->vout.size(); n++)
+        const auto &tx = out->tx;
+        uint256 tx_hash = tx->GetHash();
+        for (int n = 0; n < tx->vout.size(); n++)
         {
-            CTxOut out = wtx.tx->vout[n];
+            CTxOut out = tx->vout[n];
             COutPoint wtx_out(tx_hash, n);
             if (is_in_mempool(tx_hash)) {
                 continue;
@@ -34,6 +31,9 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
                 continue;
             }
             if (!IsMine(out)) {
+                continue;
+            }
+            if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS) {
                 continue;
             }
             CScript pk = out.scriptPubKey;
