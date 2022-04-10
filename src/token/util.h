@@ -11,6 +11,7 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <token/token.h>
+#include <token/verify.h>
 #include <txmempool.h>
 #include <utilstrencodings.h>
 #include <wallet/wallet.h>

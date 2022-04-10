@@ -16,6 +16,16 @@ void get_next_issuance_id(uint64_t& id)
             id = next_id;
         }
     }
+
+    uint64_t mempoolId;
+    std::string strError;
+    if (!CheckMempoolId(mempoolId, strError)) {
+        return;
+    }
+    if (mempoolId > id) {
+        id = mempoolId;
+    }
+
     id++;
 }
 

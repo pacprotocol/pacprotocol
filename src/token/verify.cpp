@@ -15,6 +15,37 @@ bool are_tokens_active(int height)
     return chainActive.Height() >= params.nTokenHeight;
 }
 
+bool CheckMempoolId(uint64_t& identifier, std::string& strError)
+{
+    LOCK(mempool.cs);
+
+    identifier = ISSUANCE_ID_BEGIN;
+
+    for (const auto& l : mempool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
+                if (mtx.vout[i].scriptPubKey.IsPayToToken()) {
+                    CToken token;
+                    CScript token_script = mtx.vout[i].scriptPubKey;
+                    if (!ContextualCheckToken(token_script, token, strError)) {
+                        strError = "corrupt-invalid-existing-mempool";
+                        return false;
+                    }
+                    if (token.getType() == CToken::ISSUANCE) {
+                        uint64_t token_id = token.getId();
+                        if (token_id > identifier) {
+                            identifier = token_id + 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string& strError)
 {
     LOCK(mempool.cs);
@@ -78,9 +109,11 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string&
 bool IsIdentifierInRange(uint64_t& identifier)
 {
     uint64_t total_issuances = known_issuances.size();
-    uint64_t test_identifier = identifier - ISSUANCE_ID_BEGIN - 1;
-    LogPrint(BCLog::TOKEN, "%s - expected identifier %016llx, found identifier %016llx\n", __func__, total_issuances, test_identifier);
-    if (total_issuances != test_identifier) {
+    uint64_t identifier_index = total_issuances + ISSUANCE_ID_BEGIN;
+    uint64_t range_low = ISSUANCE_ID_BEGIN;
+    uint64_t range_high = identifier_index + TOKEN_IDRANGE;
+    if (identifier < range_low || identifier > range_high) {
+        LogPrint(BCLog::TOKEN, "%s - identifier %016llx out of range (low: %016llx / high: %016llx)\n", __func__, identifier, range_low, range_high);
         return false;
     }
     return true;
