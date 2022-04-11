@@ -104,7 +104,8 @@ void strip_control_chars(std::string& instr)
     instr = outstr;
 }
 
-bool is_in_mempool(uint256& txhash) {
+bool is_in_mempool(uint256& txhash)
+{
     LOCK(mempool.cs);
     if (mempool.exists(txhash)) {
         return true;
@@ -112,7 +113,8 @@ bool is_in_mempool(uint256& txhash) {
     return false;
 }
 
-void remove_from_mempool(CTransaction& tx) {
+void remove_from_mempool(CTransaction& tx)
+{
     LOCK(mempool.cs);
     mempool.removeRecursive(tx, MemPoolRemovalReason::CONFLICT);
 }

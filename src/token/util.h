@@ -14,8 +14,8 @@
 #include <token/verify.h>
 #include <txmempool.h>
 #include <utilstrencodings.h>
-#include <wallet/wallet.h>
 #include <validation.h>
+#include <wallet/wallet.h>
 
 #include <boost/algorithm/string.hpp>
 

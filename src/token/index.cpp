@@ -13,8 +13,7 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
         return true;
     }
 
-    for (int height = params.nTokenHeight; height < lastHeight; ++height)
-    {
+    for (int height = params.nTokenHeight; height < lastHeight; ++height) {
         const CBlockIndex* pindex = chainActive[height];
         if (!pindex) {
             LogPrint(BCLog::TOKEN, "%s - error reading blockindex for height %d\n", __func__, height);
@@ -28,8 +27,7 @@ bool ScanForTokenMetadata(int lastHeight, const Consensus::Params& params)
         }
 
         CCoinsViewCache& view = *pcoinsTip;
-        for (unsigned int i = 0; i < block.vtx.size(); i++)
-        {
+        for (unsigned int i = 0; i < block.vtx.size(); i++) {
             const CTransactionRef& tx = block.vtx[i];
             if (!tx->HasTokenOutput()) {
                 continue;

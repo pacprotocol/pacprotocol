@@ -7,8 +7,8 @@
 #include <token/util.h>
 #include <token/verify.h>
 #include <txmempool.h>
-#include <wallet/wallet.h>
 #include <validation.h>
+#include <wallet/wallet.h>
 
 extern CTxMemPool mempool;
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
@@ -18,12 +18,10 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
     LOCK(cs_wallet);
 
     amountFound = 0;
-    for (auto out : GetSpendableTXs())
-    {
-        const auto &tx = out->tx;
+    for (auto out : GetSpendableTXs()) {
+        const auto& tx = out->tx;
         uint256 tx_hash = tx->GetHash();
-        for (int n = 0; n < tx->vout.size(); n++)
-        {
+        for (int n = 0; n < tx->vout.size(); n++) {
             CTxOut out = tx->vout[n];
             COutPoint wtx_out(tx_hash, n);
             if (is_in_mempool(tx_hash)) {
@@ -65,12 +63,10 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
     LOCK(cs_wallet);
 
     amountFound = 0;
-    for (auto out : GetSpendableTXs())
-    {
-        const auto &tx = out->tx;
+    for (auto out : GetSpendableTXs()) {
+        const auto& tx = out->tx;
         uint256 tx_hash = tx->GetHash();
-        for (int n = 0; n < tx->vout.size(); n++)
-        {
+        for (int n = 0; n < tx->vout.size(); n++) {
             CTxOut out = tx->vout[n];
             COutPoint wtx_out(tx_hash, n);
             if (is_in_mempool(tx_hash)) {

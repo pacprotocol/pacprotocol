@@ -193,19 +193,18 @@ bool CheckTokenInputs(const CTransactionRef& tx, const CBlockIndex* pindex, cons
     }
 
     int spentHeight = pindex->nHeight;
-    for (unsigned int i = 0; i < tx->vin.size(); i++)
-    {
-         const COutPoint &prevout = tx->vin[i].prevout;
-         const Coin& coin = view.AccessCoin(prevout);
-         int confirmations = spentHeight - coin.nHeight;
+    for (unsigned int i = 0; i < tx->vin.size(); i++) {
+        const COutPoint& prevout = tx->vin[i].prevout;
+        const Coin& coin = view.AccessCoin(prevout);
+        int confirmations = spentHeight - coin.nHeight;
 
-         LogPrint(BCLog::TOKEN, "%s - COutPoint (%s, %d) has %d confirms, want %d confirm\n",
-                                __func__, prevout.hash.ToString(), prevout.n, confirmations, TOKEN_MINCONFS);
+        LogPrint(BCLog::TOKEN, "%s - COutPoint (%s, %d) has %d confirms, want %d confirm\n",
+            __func__, prevout.hash.ToString(), prevout.n, confirmations, TOKEN_MINCONFS);
 
-         if (confirmations < TOKEN_MINCONFS) {
-             strError = "token-vin-insufficient-confirms";
-             return false;
-         }
+        if (confirmations < TOKEN_MINCONFS) {
+            strError = "token-vin-insufficient-confirms";
+            return false;
+        }
     }
 
     return true;
@@ -380,7 +379,7 @@ void UndoTokenIssuance(uint64_t& id, std::string& name)
             uint64_t stored_id = known_issuances.at(index).getId();
             std::string stored_name = known_issuances.at(index).getName();
             if (stored_id == id && stored_name == name) {
-                known_issuances.erase(known_issuances.begin()+index);
+                known_issuances.erase(known_issuances.begin() + index);
                 return;
             }
         }

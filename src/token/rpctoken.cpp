@@ -243,8 +243,7 @@ UniValue tokenbalance(const JSONRPCRequest& request)
             }
 
             uint256 tx_hash = wtx.tx->GetHash();
-            for (int n = 0; n < wtx.tx->vout.size(); n++)
-            {
+            for (int n = 0; n < wtx.tx->vout.size(); n++) {
                 CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
@@ -355,8 +354,7 @@ UniValue tokenlist(const JSONRPCRequest& request)
             if (wtx.IsCoinBase())
                 continue;
 
-            for (int n = 0; n < wtx.tx->vout.size(); n++)
-            {
+            for (int n = 0; n < wtx.tx->vout.size(); n++) {
                 CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
@@ -786,8 +784,7 @@ UniValue tokenunspent(const JSONRPCRequest& request)
     UniValue result(UniValue::VARR);
     {
         LOCK(pwallet->cs_wallet);
-        for (auto it : pwallet->mapWallet)
-        {
+        for (auto it : pwallet->mapWallet) {
             const CWalletTx& wtx = it.second;
             if (wtx.IsCoinBase())
                 continue;
@@ -799,8 +796,7 @@ UniValue tokenunspent(const JSONRPCRequest& request)
                 continue;
 
             uint256 tx_hash = wtx.tx->GetHash();
-            for (int n = 0; n < wtx.tx->vout.size(); n++)
-            {
+            for (int n = 0; n < wtx.tx->vout.size(); n++) {
                 CTxOut out = wtx.tx->vout[n];
                 CScript pk = out.scriptPubKey;
                 CAmount nValue = out.nValue;
@@ -810,8 +806,7 @@ UniValue tokenunspent(const JSONRPCRequest& request)
                     continue;
                 }
 
-                if (pk.IsPayToToken())
-                {
+                if (pk.IsPayToToken()) {
                     CToken token;
                     if (!build_token_from_script(pk, token)) {
                         continue;
@@ -828,9 +823,9 @@ UniValue tokenunspent(const JSONRPCRequest& request)
                     //! create and fill entry
                     UniValue entry(UniValue::VOBJ);
                     if (nValue > 0) {
-                        entry.pushKV ("token", token.getName());
-                        entry.pushKV ("data", HexStr(pk));
-                        entry.pushKV ("amount", nValue);
+                        entry.pushKV("token", token.getName());
+                        entry.pushKV("data", HexStr(pk));
+                        entry.pushKV("amount", nValue);
                         result.push_back(entry);
                     }
                 }
