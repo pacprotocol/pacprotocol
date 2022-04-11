@@ -15,6 +15,8 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
 bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
 {
+    LOCK(cs_wallet);
+
     amountFound = 0;
     for (auto out : GetSpendableTXs())
     {
@@ -34,6 +36,9 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
                 continue;
             }
             if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS) {
+                continue;
+            }
+            if (is_output_in_mempool(wtx_out)) {
                 continue;
             }
             CScript pk = out.scriptPubKey;
@@ -57,6 +62,8 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
 
 bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
 {
+    LOCK(cs_wallet);
+
     amountFound = 0;
     for (auto out : GetSpendableTXs())
     {
@@ -76,6 +83,9 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
                 continue;
             }
             if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS) {
+                continue;
+            }
+            if (is_output_in_mempool(wtx_out)) {
                 continue;
             }
             CScript pk = out.scriptPubKey;

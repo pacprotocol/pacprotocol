@@ -126,6 +126,30 @@ bool is_output_unspent(const COutPoint& out)
     return true;
 }
 
+bool is_output_in_mempool(const COutPoint& out)
+{
+    LOCK(mempool.cs);
+
+    //! build quick vin cache
+    std::vector<COutPoint> mempool_outputs;
+    for (const auto& l : mempool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vin.size(); i++) {
+                mempool_outputs.push_back(mtx.vin[i].prevout);
+            }
+        }
+    }
+
+    //! then see if our output is in this cache
+    const auto& it = std::find(mempool_outputs.begin(), mempool_outputs.end(), out);
+    if (it != mempool_outputs.end()) {
+        return true;
+    }
+
+    return false;
+}
+
 opcodetype GetOpcode(int n)
 {
     opcodetype ret = OP_0;

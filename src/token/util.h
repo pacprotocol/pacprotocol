@@ -35,6 +35,7 @@ void strip_control_chars(std::string& instr);
 bool is_in_mempool(uint256& txhash);
 void remove_from_mempool(CTransaction& tx);
 bool is_output_unspent(const COutPoint& out);
+bool is_output_in_mempool(const COutPoint& out);
 opcodetype GetOpcode(int n);
 int GetIntFromOpcode(opcodetype n);
 
