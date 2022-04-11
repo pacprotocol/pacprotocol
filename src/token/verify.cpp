@@ -108,12 +108,8 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string&
 
 bool IsIdentifierInRange(uint64_t& identifier)
 {
-    uint64_t total_issuances = known_issuances.size();
-    uint64_t identifier_index = total_issuances + ISSUANCE_ID_BEGIN;
-    uint64_t range_low = ISSUANCE_ID_BEGIN;
-    uint64_t range_high = identifier_index + TOKEN_IDRANGE;
-    if (identifier < range_low || identifier > range_high) {
-        LogPrint(BCLog::TOKEN, "%s - identifier %016llx out of range (low: %016llx / high: %016llx)\n", __func__, identifier, range_low, range_high);
+    uint64_t identifier_index = known_issuances.size() + ISSUANCE_ID_BEGIN;
+    if (identifier < ISSUANCE_ID_BEGIN || identifier > identifier_index * TOKEN_IDRANGE) {
         return false;
     }
     return true;
