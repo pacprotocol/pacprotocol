@@ -914,7 +914,6 @@ public:
     /**
      * return suitable input via ret for minting token
      */
-
     bool FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret);
 
     /**
@@ -931,6 +930,11 @@ public:
      * return a vector with unconfirmed wallet token balance
      */
     bool GetUnconfirmedTokenBalance(CTxMemPool& pool, std::map<std::string, CAmount>& balances, std::string& strError);
+
+    /**
+     * abandon invalidated wallet transactions
+     */
+    void AbandonInvalidTransaction();
 
     /**
      * Return list of available coins and locked coins grouped by non-change output address.

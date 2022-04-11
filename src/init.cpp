@@ -43,6 +43,7 @@
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <token/index.h>
+#include <token/util.h>
 #include <ui_interface.h>
 #include <util.h>
 #include <utilmoneystr.h>
@@ -2298,6 +2299,7 @@ bool AppInitMain()
     scheduler.scheduleEvery(std::bind(&CNetFulfilledRequestManager::DoMaintenance, std::ref(netfulfilledman)), 60 * 1000);
     scheduler.scheduleEvery(std::bind(&CMasternodeSync::DoMaintenance, std::ref(masternodeSync), std::ref(*g_connman)), 1 * 1000);
     scheduler.scheduleEvery(std::bind(&CMasternodeUtils::DoMaintenance, std::ref(*g_connman)), 1 * 1000);
+    scheduler.scheduleEvery(std::bind(&reclaim_invalid_inputs), 60 * 1000);
 
     if (!fDisableGovernance) {
         scheduler.scheduleEvery(std::bind(&CGovernanceManager::DoMaintenance, std::ref(governance), std::ref(*g_connman)), 60 * 5 * 1000);
