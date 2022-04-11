@@ -52,65 +52,40 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
     }
 
     int script_len = token_script.size();
-    if (debug)
-        LogPrint(BCLog::TOKEN, "%s (%d bytes)\n", HexStr(token_script), script_len);
-
-    //! op_token
-    int byteoffset = 1;
 
     try {
+        int byteoffset = 1;
 
-        //! version
         version = GetIntFromOpcode((opcodetype)token_script[byteoffset]);
-        if (version != 0x01)
-            throw std::exception();
+        if (version != 0x01) return false;
         byteoffset += 1;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "version ok (%d)\n", version);
 
-        //! type
         type = GetIntFromOpcode((opcodetype)token_script[byteoffset]);
+        if (type != 1 && type != 2) return false;
         byteoffset += 1;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "type ok (%04x)\n", type);
 
-        //! idlen
         int idlen = token_script[byteoffset];
+        if (idlen < 1 || idlen > 8) return false;
         byteoffset += 1;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "idlen ok (%d)\n", idlen);
 
-        // identifier
         std::vector<unsigned char> vecId(token_script.begin() + byteoffset, token_script.begin() + byteoffset + idlen);
         identifier = CScriptNum(vecId, true).getuint64();
         byteoffset += idlen;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "id ok (%016x)\n", identifier);
 
-        //! namelen
         int namelen = token_script[byteoffset];
-        if (namelen < TOKENNAME_MINLEN || namelen > TOKENNAME_MAXLEN)
-            throw std::exception();
+        if (namelen < TOKENNAME_MINLEN || namelen > TOKENNAME_MAXLEN) return false;
         byteoffset += 1;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "namelen ok (%d)\n", namelen);
 
-        //! name
         std::vector<unsigned char> vecName(token_script.begin() + byteoffset, token_script.begin() + byteoffset + namelen);
         name = std::string(vecName.begin(), vecName.end());
         byteoffset += namelen;
-        if (debug)
-            LogPrint(BCLog::TOKEN, "name ok (%s)\n", std::string(vecName.begin(), vecName.end()).c_str());
 
-        //! scriptpubkey
         std::vector<unsigned char> vecPubKey(token_script.end() - 22, token_script.end() - 2);
         std::string hashBytes = HexStr(vecPubKey);
-        if (debug)
-            LogPrint(BCLog::TOKEN, "hash160 of pubkey (%s)\n", hashBytes);
 
-        // all ok
-        if (debug)
-            LogPrint(BCLog::TOKEN, "script passed without errors\n");
+        LogPrint(BCLog::TOKEN, "%s (%d bytes) - ver: %d, type %04x, idlen %d, id %016x, namelen %d, name %s, pubkeyhash %s\n",
+                               HexStr(token_script), script_len, version, type, idlen, identifier, namelen,
+                               std::string(vecName.begin(), vecName.end()).c_str(), hashBytes);
 
     } catch (const std::exception& e) {
         return false;
