@@ -33,7 +33,7 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
             if (!IsMine(out)) {
                 continue;
             }
-            if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS) {
+            if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS + 1) {
                 continue;
             }
             if (is_output_in_mempool(wtx_out)) {
@@ -78,7 +78,7 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
             if (!IsMine(out)) {
                 continue;
             }
-            if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS) {
+            if (GetUTXOConfirmations(wtx_out) < TOKEN_MINCONFS + 1) {
                 continue;
             }
             if (is_output_in_mempool(wtx_out)) {
