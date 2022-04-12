@@ -283,14 +283,15 @@ UniValue tokenbalance(const JSONRPCRequest& request)
 
                     //! create and fill entry
                     std::string name = token.getName();
-                    if (!in_mempool)
+                    if (!in_mempool) {
                         token_balances_confirmed[name] += nValue;
-                    else
-                        pwallet->GetUnconfirmedTokenBalance(mempool, token_balances_unconfirmed, strError);
+                    }
                 }
             }
         }
     }
+
+    pwallet->GetUnconfirmedTokenBalance(mempool, token_balances_unconfirmed, strError);
 
     UniValue confirmed(UniValue::VOBJ);
     for (const auto& l : token_balances_confirmed) {
