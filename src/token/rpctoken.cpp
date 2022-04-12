@@ -145,6 +145,7 @@ UniValue tokenmint(const JSONRPCRequest& request)
     if (!pwallet->FundMintTransaction(required_funds, valueOut, ret_input)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Could not find enough token to create transaction.");
     }
+    print_txin_funds(ret_input);
 
     // Generate new change address
     bool change_was_used = (valueOut - required_funds) > 0;
@@ -462,6 +463,7 @@ UniValue tokensend(const JSONRPCRequest& request)
     if (!pwallet->FundTokenTransaction(strToken, nAmount, valueOut, ret_input)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Could not find enough token to create transaction.");
     }
+    print_txin_funds(ret_input);
 
     // Generate target destination 'out'
     CScript destPubKey;

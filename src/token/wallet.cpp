@@ -41,11 +41,7 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
             }
             CScript pk = out.scriptPubKey;
             CAmount inputValue = out.nValue;
-            //! dont count checksum output value
-            if (pk.IsChecksumData()) {
-                continue;
-            }
-            if (!pk.IsPayToToken()) {
+            if (!pk.IsPayToToken() && !pk.IsChecksumData()) {
                 amountFound += inputValue;
                 CTxIn inputFound(COutPoint(tx_hash, n));
                 ret.push_back(inputFound);
@@ -86,11 +82,7 @@ bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, C
             }
             CScript pk = out.scriptPubKey;
             CAmount inputValue = out.nValue;
-            //! dont count checksum output value
-            if (pk.IsChecksumData()) {
-                continue;
-            }
-            if (pk.IsPayToToken()) {
+            if (pk.IsPayToToken() && !pk.IsChecksumData()) {
                 CToken token;
                 if (!build_token_from_script(pk, token)) {
                     continue;

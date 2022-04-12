@@ -166,6 +166,14 @@ bool is_output_in_mempool(const COutPoint& out)
     return false;
 }
 
+void print_txin_funds(std::vector<CTxIn>& funds_ret)
+{
+    unsigned int n = 0;
+    for (CTxIn input : funds_ret) {
+        LogPrint(BCLog::TOKEN, "%s - input %d - %s\n", __func__, n++, input.ToString());
+    }
+}
+
 opcodetype GetOpcode(int n)
 {
     opcodetype ret = OP_0;
