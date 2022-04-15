@@ -13,10 +13,8 @@
 extern CTxMemPool mempool;
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
-bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
+bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret) const
 {
-    LOCK(cs_wallet);
-
     amountFound = 0;
     for (auto out : GetSpendableTXs()) {
         const auto& tx = out->tx;
@@ -54,10 +52,8 @@ bool CWallet::FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std:
     return false;
 }
 
-bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret)
+bool CWallet::FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret) const
 {
-    LOCK(cs_wallet);
-
     amountFound = 0;
     for (auto out : GetSpendableTXs()) {
         const auto& tx = out->tx;

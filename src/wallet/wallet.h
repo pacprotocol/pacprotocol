@@ -914,12 +914,12 @@ public:
     /**
      * return suitable input via ret for minting token
      */
-    bool FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret);
+    bool FundMintTransaction(CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * return suitable inputs via ret for given token name and value
      */
-    bool FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret);
+    bool FundTokenTransaction(std::string& tokenname, CAmount& amountMin, CAmount& amountFound, std::vector<CTxIn>& ret) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * sign a token-based transaction

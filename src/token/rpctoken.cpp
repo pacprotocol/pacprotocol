@@ -88,6 +88,9 @@ UniValue tokenmint(const JSONRPCRequest& request)
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
+    LOCK2(cs_main, mempool.cs);
+    LOCK(pwallet->cs_wallet);
+
     // Address
     std::string strOwner = request.params[0].get_str();
     CTxDestination dest = DecodeDestination(strOwner);
@@ -436,6 +439,9 @@ UniValue tokensend(const JSONRPCRequest& request)
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, mempool.cs);
+    LOCK(pwallet->cs_wallet);
 
     // Address
     std::string strDest = request.params[0].get_str();
