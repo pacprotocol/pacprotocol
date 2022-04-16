@@ -388,6 +388,8 @@ libdash_server_a_SOURCES = \
   token/util.h \
   token/verify.cpp \
   token/verify.h \
+  token/wallet.cpp \
+  token/wallet.h \
   txdb.cpp \
   txmempool.cpp \
   ui_interface.cpp \
