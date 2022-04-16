@@ -108,7 +108,7 @@ bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string&
 
 bool IsIdentifierInRange(uint64_t& identifier)
 {
-    uint64_t identifier_index = known_issuances.size() + ISSUANCE_ID_BEGIN;
+    uint64_t identifier_index = get_issuances_size() + ISSUANCE_ID_BEGIN;
     if (identifier < ISSUANCE_ID_BEGIN || identifier > identifier_index * TOKEN_IDRANGE) {
         return false;
     }
@@ -127,7 +127,9 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool o
             }
             token.setOriginTx(hash);
             if (token.getType() == CToken::ISSUANCE) {
-                for (CToken& issued : known_issuances) {
+                //! we're only reading from it, so this is fine
+                std::vector<CToken> temp_issuances = copy_issuances_vector();
+                for (CToken& issued : temp_issuances) {
                     if (issued.getOriginTx() != token.getOriginTx()) {
                         if (issued.getName() == token.getName()) {
                             strError = "issuance-name-exists";
@@ -145,7 +147,7 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool o
                     return false;
                 }
                 if (!onlyCheck && (!is_name_in_issuances(name) && !is_identifier_in_issuances(identifier))) {
-                    known_issuances.push_back(token);
+                    add_to_issuances(token);
                 }
             } else if (token.getType() == CToken::NONE) {
                 return false;

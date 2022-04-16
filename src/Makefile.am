@@ -381,6 +381,8 @@ libdash_server_a_SOURCES = \
   torcontrol.cpp \
   token/index.cpp \
   token/index.h \
+  token/issuances.cpp \
+  token/issuances.h \
   token/rpctoken.cpp \
   token/token.cpp \
   token/token.h \

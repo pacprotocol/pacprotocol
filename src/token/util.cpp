@@ -5,7 +5,6 @@
 #include <token/util.h>
 
 extern CTxMemPool mempool;
-std::vector<CToken> known_issuances;
 
 void reclaim_invalid_inputs()
 {
@@ -21,62 +20,9 @@ void reclaim_invalid_inputs()
     }
 }
 
-void get_next_issuance_id(uint64_t& id)
-{
-    id = ISSUANCE_ID_BEGIN;
-    for (CToken& token : known_issuances) {
-        uint64_t next_id = token.getId();
-        if (next_id >= id) {
-            id = next_id;
-        }
-    }
-
-    uint64_t mempoolId;
-    std::string strError;
-    if (!CheckMempoolId(mempoolId, strError)) {
-        return;
-    }
-    if (mempoolId > id) {
-        id = mempoolId;
-    }
-
-    id++;
-}
-
-bool is_name_in_issuances(std::string& name)
-{
-    for (CToken& token : known_issuances) {
-        if (token.getName() == name) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool is_identifier_in_issuances(uint64_t& identifier)
-{
-    for (CToken& token : known_issuances) {
-        if (token.getId() == identifier) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool compare_token_name(std::string& prev_token_name, std::string& token_name)
 {
     return (prev_token_name.compare(token_name) == 0);
-}
-
-bool get_id_for_token_name(std::string& name, uint64_t& id)
-{
-    for (CToken& token : known_issuances) {
-        if (name == token.getName()) {
-            id = token.getId();
-            return true;
-        }
-    }
-    return false;
 }
 
 bool check_token_name(std::string& tokenName, std::string& errorReason)

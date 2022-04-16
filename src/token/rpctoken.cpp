@@ -4,6 +4,7 @@
 
 #include <consensus/validation.h>
 #include <rpc/server.h>
+#include <token/issuances.h>
 #include <token/util.h>
 #include <token/verify.h>
 #include <validation.h>
