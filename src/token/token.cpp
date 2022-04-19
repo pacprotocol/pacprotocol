@@ -94,6 +94,21 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
     return true;
 }
 
+bool get_tokenid_from_script(CScript& token_script, uint64_t& id)
+{
+    uint8_t version;
+    uint16_t type;
+    uint64_t identifier;
+    std::string name;
+    CPubKey ownerKey;
+    if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, true)) {
+        return false;
+    }
+    id = identifier;
+
+    return true;
+}
+
 bool build_token_from_script(CScript& token_script, CToken& token)
 {
     uint8_t version;

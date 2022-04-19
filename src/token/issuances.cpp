@@ -9,26 +9,40 @@ std::vector<CToken> known_issuances;
 
 void get_next_issuance_id(uint64_t& id)
 {
-    std::lock_guard<std::mutex> lock(issuances_mutex);
-
     id = ISSUANCE_ID_BEGIN;
-    for (CToken& token : known_issuances) {
-        uint64_t next_id = token.getId();
-        if (next_id >= id) {
-            id = next_id;
+    while (++id < std::numeric_limits<uint64_t>::max()) {
+         if (!is_identifier_in_issuances(id)) {
+             if (!is_identifier_in_mempool(id)) {
+                 return;
+             }
+         }
+    }
+}
+
+bool is_identifier_in_mempool(uint64_t& id)
+{
+    LOCK(mempool.cs);
+
+    //! check each mempool tx/vout's id if tokentx
+    for (const auto& l : mempool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
+                CScript token_script = mtx.vout[i].scriptPubKey;
+                if (token_script.IsPayToToken()) {
+                    uint64_t tokenid;
+                    if (!get_tokenid_from_script(token_script, tokenid)) {
+                        continue;
+                    }
+                    if (tokenid == id) {
+                        return true;
+                    }
+                }
+            }
         }
     }
 
-    uint64_t mempoolId;
-    std::string strError;
-    if (!CheckMempoolId(mempoolId, strError)) {
-        return;
-    }
-    if (mempoolId > id) {
-        id = mempoolId;
-    }
-
-    id++;
+    return false;
 }
 
 bool is_name_in_issuances(std::string& name)

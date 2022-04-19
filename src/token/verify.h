@@ -16,7 +16,6 @@
 class CToken;
 
 bool are_tokens_active(int height = 0);
-bool CheckMempoolId(uint64_t& identifier, std::string& strError);
 bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tokenTx, std::string& strError);
 bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool onlyCheck);
 bool CheckTokenInputs(const CTransactionRef& tx, const CBlockIndex* pindex, const CCoinsViewCache& view, std::string& strError);

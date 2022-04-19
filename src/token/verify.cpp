@@ -15,37 +15,6 @@ bool are_tokens_active(int height)
     return chainActive.Height() >= params.nTokenHeight;
 }
 
-bool CheckMempoolId(uint64_t& identifier, std::string& strError)
-{
-    LOCK(mempool.cs);
-
-    identifier = ISSUANCE_ID_BEGIN;
-
-    for (const auto& l : mempool.mapTx) {
-        const CTransaction& mtx = l.GetTx();
-        if (mtx.HasTokenOutput()) {
-            for (unsigned int i = 0; i < mtx.vout.size(); i++) {
-                if (mtx.vout[i].scriptPubKey.IsPayToToken()) {
-                    CToken token;
-                    CScript token_script = mtx.vout[i].scriptPubKey;
-                    if (!ContextualCheckToken(token_script, token, strError)) {
-                        strError = "corrupt-invalid-existing-mempool";
-                        return false;
-                    }
-                    if (token.getType() == CToken::ISSUANCE) {
-                        uint64_t token_id = token.getId();
-                        if (token_id > identifier) {
-                            identifier = token_id + 1;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return true;
-}
-
 bool CheckTokenMempool(CTxMemPool& pool, const CTransactionRef& tx, std::string& strError)
 {
     LOCK(mempool.cs);
