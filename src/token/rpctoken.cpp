@@ -181,6 +181,13 @@ UniValue tokenmint(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error signing token transaction (%s)", strError));
     }
 
+    // Check if it will be accepted
+    CValidationState state;
+    bool res = AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, false, 0, true);
+    if (!res) {
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Transaction %s was constructed but not accepted by mempool (%s)", tx.GetHash().ToString(), state.GetDebugMessage()));
+    }
+
     // Broadcast transaction
     CWalletTx wtx(pwallet, MakeTransactionRef(tx));
     if (!wtx.RelayWalletTransaction(g_connman.get())) {
@@ -511,6 +518,13 @@ UniValue tokensend(const JSONRPCRequest& request)
     std::string strError;
     if (!pwallet->SignTokenTransaction(tx, strError)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Error signing token transaction (%s)", strError));
+    }
+
+    // Check if it will be accepted
+    CValidationState state;
+    bool res = AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, false, 0, true);
+    if (!res) {
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Transaction %s was constructed but not accepted by mempool (%s)", tx.GetHash().ToString(), state.GetDebugMessage()));
     }
 
     // Broadcast transaction
