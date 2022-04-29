@@ -126,9 +126,9 @@ bool CheckTokenIssuance(const CTransactionRef& tx, std::string& strError, bool o
     return true;
 }
 
-bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& strError)
+bool ContextualCheckToken(CScript& token_script, CToken& token, std::string& strError, bool debug)
 {
-    build_token_from_script(token_script, token);
+    build_token_from_script(token_script, token, debug);
 
     if (token.getVersion() != CToken::CURRENT_VERSION) {
         strError = "bad-token-version";
@@ -270,7 +270,7 @@ bool CheckToken(const CTransactionRef& tx, const CBlockIndex* pindex, const CCoi
                 //! extract prevtoken data from the output
                 CToken prevToken;
                 CScript prevTokenData = inputPrev->vout[tx->vin[n].prevout.n].scriptPubKey;
-                if (!ContextualCheckToken(prevTokenData, prevToken, strError)) {
+                if (!ContextualCheckToken(prevTokenData, prevToken, strError, false)) {
                     strError = "token-prevtoken-isinvalid";
                     return false;
                 }

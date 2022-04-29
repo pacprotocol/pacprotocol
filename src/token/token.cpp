@@ -83,9 +83,11 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
         std::vector<unsigned char> vecPubKey(token_script.end() - 22, token_script.end() - 2);
         std::string hashBytes = HexStr(vecPubKey);
 
-        LogPrint(BCLog::TOKEN, "%s (%d bytes) - ver: %d, type %04x, idlen %d, id %016x, namelen %d, name %s, pubkeyhash %s\n",
-                               HexStr(token_script), script_len, version, type, idlen, identifier, namelen,
-                               std::string(vecName.begin(), vecName.end()).c_str(), hashBytes);
+        if (debug) {
+            LogPrint(BCLog::TOKEN, "%s (%d bytes) - ver: %d, type %04x, idlen %d, id %016x, namelen %d, name %s, pubkeyhash %s\n",
+                                   HexStr(token_script), script_len, version, type, idlen, identifier, namelen,
+                                   std::string(vecName.begin(), vecName.end()).c_str(), hashBytes);
+        }
 
     } catch (const std::exception& e) {
         return false;
@@ -94,14 +96,14 @@ bool decode_token_script(CScript& token_script, uint8_t& version, uint16_t& type
     return true;
 }
 
-bool get_tokenid_from_script(CScript& token_script, uint64_t& id)
+bool get_tokenid_from_script(CScript& token_script, uint64_t& id, bool debug)
 {
     uint8_t version;
     uint16_t type;
     uint64_t identifier;
     std::string name;
     CPubKey ownerKey;
-    if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, true)) {
+    if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, debug)) {
         return false;
     }
     id = identifier;
@@ -109,14 +111,14 @@ bool get_tokenid_from_script(CScript& token_script, uint64_t& id)
     return true;
 }
 
-bool build_token_from_script(CScript& token_script, CToken& token)
+bool build_token_from_script(CScript& token_script, CToken& token, bool debug)
 {
     uint8_t version;
     uint16_t type;
     uint64_t identifier;
     std::string name;
     CPubKey ownerKey;
-    if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, true)) {
+    if (!decode_token_script(token_script, version, type, identifier, name, ownerKey, debug)) {
         return false;
     }
 
