@@ -455,8 +455,11 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         }
 
         if (packageFees < blockMinFeeRate.GetFee(packageSize)) {
+            CAmount pseudoTokenFees = tokentx_in_mempool() * 1000;
             // Everything else we might consider has a lower fee rate
-            return;
+            if (packageFees + pseudoTokenFees < blockMinFeeRate.GetFee(packageSize)) {
+                return;
+            }
         }
 
         if (!TestPackage(packageSize, packageSigOps)) {

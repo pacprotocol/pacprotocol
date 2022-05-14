@@ -30,6 +30,7 @@ bool is_in_mempool(uint256& txhash);
 void remove_from_mempool(CTransaction& tx);
 bool is_output_unspent(const COutPoint& out);
 bool is_output_in_mempool(const COutPoint& out);
+int tokentx_in_mempool();
 void print_txin_funds(std::vector<CTxIn>& funds_ret);
 opcodetype GetOpcode(int n);
 int GetIntFromOpcode(opcodetype n);

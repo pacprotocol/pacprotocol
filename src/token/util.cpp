@@ -112,6 +112,21 @@ bool is_output_in_mempool(const COutPoint& out)
     return false;
 }
 
+int tokentx_in_mempool()
+{
+    LOCK(mempool.cs);
+
+    int token_total = 0;
+    for (const auto& l : mempool.mapTx) {
+        const CTransaction& mtx = l.GetTx();
+        if (mtx.HasTokenOutput()) {
+            token_total++;
+        }
+    }
+
+    return token_total;
+}
+
 void print_txin_funds(std::vector<CTxIn>& funds_ret)
 {
     unsigned int n = 0;
