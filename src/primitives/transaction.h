@@ -197,6 +197,7 @@ public:
 
     bool IsTokenOutput() const;
     bool IsTokenChecksum() const;
+    bool IsStandardOutput() const;
     std::string ToString() const;
 };
 

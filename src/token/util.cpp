@@ -119,7 +119,13 @@ int tokentx_in_mempool()
     int token_total = 0;
     for (const auto& l : mempool.mapTx) {
         const CTransaction& mtx = l.GetTx();
-        if (mtx.HasTokenOutput()) {
+        bool is_token_tx = true;
+        for (const auto& m : mtx.vout) {
+            if (m.IsStandardOutput()) {
+                is_token_tx = false;
+            }
+        }
+        if (is_token_tx) {
             token_total++;
         }
     }

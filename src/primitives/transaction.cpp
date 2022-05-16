@@ -68,6 +68,13 @@ bool CTxOut::IsTokenChecksum() const
     return false;
 }
 
+bool CTxOut::IsStandardOutput() const
+{
+    if (!IsTokenOutput() && !IsTokenChecksum())
+        return true;
+    return false;
+}
+
 std::string CTxOut::ToString() const
 {
     if (IsTokenOutput())
