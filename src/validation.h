@@ -133,9 +133,9 @@ static const bool DEFAULT_TIMESTAMPINDEX = false;
 static const bool DEFAULT_SPENTINDEX = false;
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 /** Default for -persistmempool */
-static const bool DEFAULT_PERSIST_MEMPOOL = true;
+static const bool DEFAULT_PERSIST_MEMPOOL = false;
 /** Default for -syncmempool */
-static const bool DEFAULT_SYNC_MEMPOOL = true;
+static const bool DEFAULT_SYNC_MEMPOOL = false;
 
 /** Maximum number of headers to announce when relaying blocks with headers message.*/
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
