@@ -2442,6 +2442,9 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache, const isminefilter& filter
     uint256 hashTx = GetHash();
     for (unsigned int i = 0; i < tx->vout.size(); i++)
     {
+        if (tx->vout[i].IsTokenOutput() || tx->vout[i].IsTokenChecksum()) {
+            continue;
+        }
         if (!pwallet->IsSpent(hashTx, i))
         {
             const CTxOut &txout = tx->vout[i];
