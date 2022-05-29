@@ -218,9 +218,17 @@ UniValue tokenbalance(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"name\"            (string, optional) Only show tokens matching name.\n");
 
+    // Prevent tokenbalance while still in blocksync
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Cannot perform token action while still in Initial Block Download");
+    }
+
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, mempool.cs);
+    LOCK(pwallet->cs_wallet);
 
     // Name
     bool use_filter = false;
@@ -233,8 +241,6 @@ UniValue tokenbalance(const JSONRPCRequest& request)
         filter_name.clear();
     }
 
-    LOCK(pwallet->cs_wallet);
-
     std::map<std::string, CAmount> token_balances_confirmed;
     std::map<std::string, CAmount> token_balances_unconfirmed;
 
@@ -242,7 +248,6 @@ UniValue tokenbalance(const JSONRPCRequest& request)
     std::string strError;
     UniValue result(UniValue::VOBJ);
     {
-        LOCK(pwallet->cs_wallet);
         for (auto it : pwallet->mapWallet) {
 
             const CWalletTx& wtx = it.second;
