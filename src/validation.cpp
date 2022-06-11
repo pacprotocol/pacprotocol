@@ -221,7 +221,7 @@ private:
 
 CCriticalSection cs_main;
 
-bool isIbdComplete{false};
+bool ibd_complete{false};
 bool havePassedPoS{false};
 bool fGlobalStakingToggle{false};
 static std::map<uint256, uint256> mapProofOfStake;
@@ -1094,7 +1094,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     }
 
     // Check the header
-    if (isIbdComplete && block.IsProofOfWork() && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+    if (ibd_complete && block.IsProofOfWork() && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -1110,7 +1110,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
     if (!ReadBlockFromDisk(block, blockPos, consensusParams))
         return false;
-    if (isIbdComplete && (block.GetHash() != pindex->GetBlockHash()))
+    if (ibd_complete && (block.GetHash() != pindex->GetBlockHash()))
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
     return true;
@@ -1251,7 +1251,7 @@ bool IsInitialBlockDownload()
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
-    isIbdComplete = true;
+    ibd_complete = true;
     latchToFalse.store(true, std::memory_order_relaxed);
     return false;
 }
@@ -4084,7 +4084,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
             return error("%s: check proof-of-stake failed for block %s\n", __func__, block.GetHash().ToString());
         if (hashProofOfStake == uint256())
             return error("%s: hashproof returned empty!\n", __func__);
-        if (isIbdComplete && !checkPrevStake(hashProofOfStake, chainparams))
+        if (ibd_complete && !checkPrevStake(hashProofOfStake, chainparams))
             return error("%s: hashproof has already been used!\n", __func__);
         uint256 hash = block.GetHash();
         if (!mapProofOfStake.count(hash)) // add to mapProofOfStake
