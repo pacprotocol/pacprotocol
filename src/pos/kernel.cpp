@@ -333,7 +333,7 @@ bool CheckProofOfStake(const CBlock& block, uint256& hashProofOfStake, const CBl
         {
             int nIn = 0;
             const CTxOut& prevOut = txPrev->vout[tx->vin[nIn].prevout.n];
-            if (isIbdComplete && !CheckKernelScript(prevOut.scriptPubKey, tx->vout[1].scriptPubKey)) {
+            if (ibd_complete && !CheckKernelScript(prevOut.scriptPubKey, tx->vout[1].scriptPubKey)) {
                 return error("CheckProofOfStake: VerifyScript failed on coinstake %s", tx->GetHash().ToString());
             }
         }

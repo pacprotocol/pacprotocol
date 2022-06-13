@@ -222,7 +222,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     CAmount nValueIn = 0;
-    for (unsigned int i = 0; i < tx.vin.size(); ++i) {
+    for (unsigned int i = 0; i < tx.vin.size(); ++i)
+    {
         const COutPoint &prevout = tx.vin[i].prevout;
         const Coin& coin = inputs.AccessCoin(prevout);
         assert(!coin.IsSpent());
@@ -237,25 +238,29 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         // Check for negative or overflow input values
         nValueIn += coin.out.nValue;
         if (!MoneyRange(coin.out.nValue) || !MoneyRange(nValueIn)) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
+            return state.Invalid(false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
         }
     }
 
     const CAmount nValueOut = tx.GetValueOut();
 
-    if (!tx.IsCoinStake()) {
+    if (!tx.IsCoinStake())
+    {
         if (nValueIn < nValueOut) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,
+            return state.Invalid(false,
+                REJECT_INVALID, "bad-txns-in-belowout",
                 strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(nValueOut)));
         }
 
         // Tally transaction fees
         const CAmount txfee_aux = nValueIn - nValueOut;
-        if (!MoneyRange(txfee_aux)) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+        if (txfee_aux < 0) {
+            return state.Invalid(false, REJECT_INVALID, "bad-txns-fee-negative");
         }
-
-        txfee = txfee_aux;
+        txfee += txfee_aux;
+        if (!MoneyRange(txfee)) {
+            return state.Invalid(false, REJECT_INVALID, "bad-txns-fee-outofrange");
+        }
     }
 
     return true;
