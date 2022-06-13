@@ -6,15 +6,15 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/dash
-src/dashd
-src/dash-cli
-src/dash-tx
-src/test/test_dash
-src/test/test_dash_fuzzy
-src/qt/test/test_dash-qt
+src/pacprotocol
+src/pacprotocold
+src/pacprotocol-cli
+src/pacprotocol-tx
+src/test/test_pacprotocol
+src/test/test_pacprotocol_fuzzy
+src/qt/test/test_pacprotocol-qt
 src/qt/res/css/colors/*
-src/bench/bench_dash
+src/bench/bench_pacprotocol
 
 # autoreconf
 Makefile.in
@@ -85,14 +85,14 @@ libconftest.dylib*
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-dash-qt
+pacprotocol-qt
 Dash-Qt.app
 background.tiff*
 !/depends/Makefile
 
 # Unit-tests
 Makefile.test
-dash-qt_test
+pacprotocol-qt_test
 
 # Resources cpp
 qrc_*.cpp
@@ -106,7 +106,7 @@ build
 *.gcno
 *.gcda
 /*.info
-test_dash.coverage/
+test_pacprotocol.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -124,15 +124,15 @@ test/cache/*
 .autotools
 /doc/doxygen/
 
-libdashconsensus.pc
+*.pc
 contrib/devtools/split-debug.sh
-src/qt/dash-qt.bash
+src/qt/pacprotocol-qt.bash
 qa/pull-tester/tests-config.sh
 
 #development symlinks
-dash-cli
-dashd
-dash-qt
+pacprotocol-cli
+pacprotocold
+pacprotocol-qt
 make
 
 /docker/bin
