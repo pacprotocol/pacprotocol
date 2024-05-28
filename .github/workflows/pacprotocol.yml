@@ -1,6 +1,6 @@
 name: 'build pacprotocol (x86_64-linux-gnu)'
 
-on: [push]
+on: workflow_dispatch
 
 jobs:
   build:
@@ -52,5 +52,5 @@ jobs:
         run: ./configure --prefix=`pwd`/depends/${{ matrix.os }}
 
       - name: Build codebase
-        run: make -j4
+        run: make -j16 -l8
 
