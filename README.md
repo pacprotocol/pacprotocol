@@ -41,3 +41,12 @@ stable release versions of pacprotocol.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Explorer
+--------
+Please use following explorers of PAC Protocol chain
+
+https://chainz.cryptoid.info/pac/
+
+https://www.coinexplorer.net/PAC
+
+Neither https://explorer.pacglobal.io/ nor https://pacscan.io/ are providing the service. 
